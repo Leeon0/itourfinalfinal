@@ -18,7 +18,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [guideRating, setGuideRating] = useState({ averageRating: 0, totalRatings: 0 });
+  //const [guideRating, setGuideRating] = useState({ averageRating: 0, totalRatings: 0 });
 
   const { selectRoute, activeRoute, clearActiveRoute } = useRoutes();
   const { isGuide } = useAuth();
@@ -32,12 +32,12 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
         setError('');
 
         // Buscar rotas do guia
-        const res = await axios.get(`/routes/guide/${guide.id}`);
+        const res = await axios.get(`http://localhost:8000/routes/guide/${guide.id}`);
         setRoutes(res.data.results || []);
 
         // Buscar rating médio do guia
-        const ratingRes = await axios.get(`/ratings/guide/${guide.id}`);
-        setGuideRating(ratingRes.data || { averageRating: 0, totalRatings: 0 });
+        /*const ratingRes = await axios.get(`/ratings/guide/${guide.id}`);
+        setGuideRating(ratingRes.data || { averageRating: 0, totalRatings: 0 });*/
 
       } catch (err) {
         console.error('Erro ao buscar dados do guia:', err);
@@ -76,7 +76,9 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
           <Card elevation={0} sx={{ mb: 2, backgroundColor: 'transparent' }}>
             <CardContent>
               <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                <Avatar src={guide.profileImage || ''} sx={{ width: 80, height: 80, mr: 2 }}>
+                <Avatar 
+                  src= {`http://localhost:8000/${guide.profile_image}`} 
+                  sx={{ width: 80, height: 80, mr: 2 }}>
                   {!guide.profileImage && <PersonIcon sx={{ fontSize: 40 }} />}
                 </Avatar>
                 <Box>
