@@ -48,7 +48,7 @@ const GuidesList = ({ onClose, onReserve }) => {
       guides = guides
         .map((guide) => ({
           ...guide,
-          routesCount: guide.routes?.length || 0
+          routesCount: guide.routesCount || 0
         }))
         .filter((guide) => guide.routesCount > 0);
 
@@ -241,13 +241,13 @@ const GuidesList = ({ onClose, onReserve }) => {
                                 <Stack direction="row" spacing={1} flexWrap="wrap">
                                   <Chip label={`${guide.seatingCapacity} lugares`} size="small" variant="outlined" />
                                   <Chip label={guide.color} size="small" variant="outlined" />
-                                  {guide.vehicle.registration && (
+                                  {guide.registration && (
                                     <Chip label={guide.registration} size="small" variant="outlined" />
                                   )}
                                 </Stack>
-                                {guide.vehicle.additionalInfo && (
+                                {guide.additionalInfo && (
                                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                    {guide.vehicle.additionalInfo}
+                                    {guide.additionalInfo}
                                   </Typography>
                                 )}
                               </Box>
