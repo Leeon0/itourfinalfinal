@@ -345,13 +345,14 @@ app.get('/guides', (req, res) => {
         `WITH ratings AS 
             (SELECT 
                 guide_id, 
-                ROUND(AVG(rating_guide)/10, 2) AS rating 
+                ROUND(AVG(rating_guide)/10, 2) AS averageRatings,
+                COUNT(*) AS totalRatings 
             FROM reservations 
             GROUP BY guide_id), 
         number_tours AS
             (SELECT 
                 guide_id, 
-                COUNT(*) AS num 
+                COUNT(*) AS routesCount 
             FROM works 
             GROUP BY guide_id)
         SELECT 
@@ -359,8 +360,9 @@ app.get('/guides', (req, res) => {
             name, 
             email, 
             g.created_at,
-            rating, 
-            num AS routesCount, 
+            averageRatings,
+            totalRatings,
+            routesCount, 
             registration, 
             brand, 
             model, 
@@ -712,3 +714,4 @@ app.get('/guides', async (req, res) => {
   }
 
 });
+
