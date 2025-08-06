@@ -57,7 +57,7 @@ const GuidesList = ({ onClose, onReserve }) => {
         if (sortType === 'name') {
           return a.name.localeCompare(b.name);
         } else if (sortType === 'rating') {
-          return (b.averageRating || 0) - (a.averageRating || 0);
+          return (b.rating || 0) - (a.rating || 0);
         }
         return 0;
       });
@@ -190,16 +190,16 @@ const GuidesList = ({ onClose, onReserve }) => {
                         <Box display="flex" alignItems="flex-start" sx={{ mb: 2 }}>
                           <Box sx={{ mr: 2, flexShrink: 0 }}>
                             <Avatar
-                              src={guide.profileImage || undefined}
+                              src= {`http://localhost:8000/${guide.profile_image}`}
                               sx={{
                                 width: 64,
                                 height: 64,
                                 boxShadow: 1,
                                 objectFit: 'cover',
-                                bgcolor: guide.profileImage ? 'transparent' : 'primary.main'
+                                bgcolor: guide.profile_image ? 'transparent' : 'primary.main'
                               }}
                             >
-                              {!guide.profileImage && <PersonIcon sx={{ fontSize: 32 }} />}
+                              {!guide.profile_image && <PersonIcon sx={{ fontSize: 32 }} />}
                             </Avatar>
                           </Box>
 
@@ -230,19 +230,19 @@ const GuidesList = ({ onClose, onReserve }) => {
                               </Typography>
                             </Box>
 
-                            {guide.vehicle && (
+                            {guide.registration && (
                               <Box sx={{ mb: 1 }}>
                                 <Box display="flex" alignItems="center" sx={{ mb: 0.5 }}>
                                   <CarIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                                   <Typography variant="body2" fontWeight="medium">
-                                    {guide.vehicle.brand} {guide.vehicle.model}
+                                    {guide.brand} {guide.model}
                                   </Typography>
                                 </Box>
                                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                                  <Chip label={`${guide.vehicle.seatingCapacity} lugares`} size="small" variant="outlined" />
-                                  <Chip label={guide.vehicle.color} size="small" variant="outlined" />
-                                  {guide.vehicle.licensePlate && (
-                                    <Chip label={guide.vehicle.licensePlate} size="small" variant="outlined" />
+                                  <Chip label={`${guide.seatingCapacity} lugares`} size="small" variant="outlined" />
+                                  <Chip label={guide.color} size="small" variant="outlined" />
+                                  {guide.vehicle.registration && (
+                                    <Chip label={guide.registration} size="small" variant="outlined" />
                                   )}
                                 </Stack>
                                 {guide.vehicle.additionalInfo && (
@@ -254,7 +254,7 @@ const GuidesList = ({ onClose, onReserve }) => {
                             )}
 
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.80rem' }}>
-                              Member since {guide.createdAt ? new Date(guide.createdAt).toLocaleDateString('pt-BR') : 'N/A'}
+                              Member since {guide.created_at ? new Date(guide.created_at).toLocaleDateString('pt-BR') : 'N/A'}
                             </Typography>
                           </Box>
                         </Box>
