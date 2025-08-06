@@ -226,7 +226,7 @@ const GuidesList = ({ onClose, onReserve }) => {
                                 readOnly
                               />
                               <Typography variant="caption" color="text.secondary" sx={{ ml: 1, fontSize: '0.80rem' }}>
-                                ({guide.averageRating?.toFixed(1) || '0.0'}) • {guide.totalRatings || 0} review{(guide.totalRatings || 0) !== 1 ? 's' : ''} • {guide.routesCount} route{guide.routesCount !== 1 ? 's' : ''}
+                                ({Number(guide.averageRatings)?.toFixed(1) || '0.0'}) • {guide.totalRatings || 0} review{(guide.totalRatings || 0) !== 1 ? 's' : ''} • {guide.routesCount} route{guide.routesCount !== 1 ? 's' : ''}
                               </Typography>
                             </Box>
 
