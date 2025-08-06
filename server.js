@@ -6,7 +6,12 @@ const cors = require('cors'); // For web security
 const bcrypt = require('bcrypt');
 
 const multer = require('multer');
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
 const upload = multer({ storage });
 
 // Create an instance of express
@@ -25,6 +30,9 @@ const db = mysql.createConnection({
     password: "1234", // Database password
     database: "iroutedb" // Name of the database
 });
+
+// Serves files from the uploads folder
+app.use('/uploads', express.static('uploads'));
 
 // Define a route for the root URL '/'
 app.get('/', (req, res) => {
@@ -89,30 +97,32 @@ app.post('/login', (req, res) => {
     }; 
 });
 
+// User Register
+app.post('/register', upload.single('profileImage'), async (req, res) => {
+  console.log('entrei no register!')
+  let name = req.body.fullName;
+  let email = req.body.email;
+  let password = req.body.password;
+  let type = req.body.user_type;
+  let hasCar;
+  hasCar = type && req.body.registration != null? hasCar = 1 : hasCar = 0;
+  let created_at = new Date();
+  const profile_image = `uploads/${req.file.filename}`;
 
-app.post('/register', async (req, res) => {
-    let name = req.body.fullName;
-    let email = req.body.email;
-    let password = req.body.password;
-    let type = req.body.user_type;
-    // Convertir 'turista' a 0 y 'guia' a 1
-    if (type === 'turista') type = 0;
-    else if (type === 'guia') type = 1;
-    let hasCar;
-    hasCar = type === 1 && req.body.registration != null ? 1 : 0;
-
-    if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Missing required fields' });
+	if (!name || !email || !password) {
+        return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
-        // Obtener la imagen de perfil en base64 (opcional)
-        let profile_image = req.body.profile_image || req.body.profileImage || null;
+        // Hash the given password
+        const hash = await bcrypt.hash(password, saltRounds);
 
-        // Insertar usuario con imagen de perfil
+        // Insert user
         await db.promise().query(
-            'INSERT INTO users (name, email, type, password, profile_image) VALUES (?, ?, ?, ?, ?)',
-            [name, email, type, password, profile_image]
+            `INSERT INTO users 
+                (name, email, type, password, created_at, profile_image) 
+                VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, email, type, hash, created_at, profile_image]
         );
 
         const [userRow] = await db.promise().query(
@@ -127,6 +137,8 @@ app.post('/register', async (req, res) => {
             let brand = req.body.brand;
             let model = req.body.model;
             let color = req.body.color;
+            let capacity = req.body.capacity;
+            let description = req.body.description;
 
             const guide_id = userRow[0]?.id;
             if (!guide_id) {
@@ -134,8 +146,10 @@ app.post('/register', async (req, res) => {
             }
 
             await db.promise().query(
-                'INSERT INTO cars (guide_id, registration, brand, model, color) VALUES (?, ?, ?, ?, ?)',
-                [guide_id, registration, brand, model, color]
+                `INSERT INTO cars 
+                    (guide_id, registration, brand, model, color, capacity, description) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [guide_id, registration, brand, model, color, capacity, description]
             );
         }
         const user = userRow[0];
@@ -328,21 +342,41 @@ app.delete('/routes/:id', async (req, res) => {
 // Fetch All Guides
 app.get('/guides', (req, res) => {
     db.query(
-        `SELECT 
+        `WITH ratings AS 
+            (SELECT 
+                guide_id, 
+                ROUND(AVG(rating_guide)/10, 2) AS rating 
+            FROM reservations 
+            GROUP BY guide_id), 
+        number_tours AS
+            (SELECT 
+                guide_id, 
+                COUNT(*) AS num 
+            FROM works 
+            GROUP BY guide_id)
+        SELECT 
             g.id, 
             name, 
             email, 
-            g.created_at, 
+            g.created_at,
+            rating, 
+            num AS routesCount, 
             registration, 
             brand, 
             model, 
             color, 
-            category 
-        FROM users g LEFT JOIN cars c ON (g.id = guide_id) 
+            category, 
+            capacity AS seatingCapacity,
+            description AS additionalInfo,   
+            profile_image
+        FROM users g 
+            LEFT JOIN cars c ON (g.id = c.guide_id) 
+            LEFT JOIN ratings r ON (g.id = r.guide_id) 
+            LEFT JOIN number_tours n ON (g.id = n.guide_id) 
         WHERE type = 1;`, 
         (error, results) => {
         if (error) {
-            res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Internal server error' });
         }
         console.log(results);
         res.status(200).json({ message: 'Tours Listed Succesfully', results});
@@ -354,83 +388,30 @@ app.get('/routes/guide/:guideID', (req, res) => {
     console.log('vou ver as rotas do guia')
     guideID = req.params["guideID"]
     db.query(
-        `SELECT 
-            w.tour_id, 
-            w.guide_id, 
-            t.name AS tour_name, 
-            g.name AS guide_name, 
-            g.created_at, 
-            g.type, 
+        `WITH number AS 
+            (SELECT 
+                tour_id, 
+                count(*) AS locations 
+            FROM visits 
+            GROUP BY tour_id) 
+        SELECT 
+            w.tour_id AS id,
+            t.name AS name,
+            t.created_at AS created_at, 
+            w.guide_id AS guide_id,   
             t.duration, 
-            c.registration, 
-            c.brand, 
-            c.model, 
-            c.category 
-        FROM tours t JOIN works w ON (t.id = tour_id) 
-            RIGHT JOIN users g ON (g.id = guide_id) 
-            LEFT JOIN cars c ON (g.id = c.guide_id) 
+            locations
+        FROM tours t 
+            JOIN works w ON (t.id = tour_id) 
+            JOIN users g ON (g.id = guide_id) 
+            JOIN number n ON (n.tour_id = t.id) 
         WHERE g.id = ?;`,
         [guideID] ,
         (error, results) => {
         if (error) {
-            res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'Internal server error' });
         }
-        const guideMap = new Map();
-
-        results.forEach(row => {
-            if (!guideMap.has(row.guide_id)) {
-                guideMap.set(row.guide_id, {
-                    guide_id: row.guide_id,
-                    guide_name: row.guide_name,
-                    created_at: row.created_at,
-                    type: row.type,
-                    registration: row.registration,
-                    brand: row.brand,
-                    model: row.model, 
-                    category: row.category,
-                    routes: []
-                });
-            }
-
-            if (row.tour_id) {
-                guideMap.get(row.guide_id).routes.push({
-                    id: row.tour_id,
-                    name: row.tour_name,
-                    duration: row.duration
-                });
-            }
-        });
-
-        // 📌 Endpoint para obter o rating médio de um guia
-// Exemplo de chamada: GET /ratings/guide/5
-app.get('/ratings/guide/:guideId', async (req, res) => {
-  const { guideId } = req.params;
-
-  try {
-    // Buscar média e total de avaliações do guia
-    const [rows] = await db.promise().query(
-      `SELECT AVG(rating) AS averageRating, COUNT(*) AS totalRatings FROM ratings WHERE guide_id = ?`,
-      [guideId]
-    );
-
-    // Extrair os dados da resposta
-    const { averageRating, totalRatings } = rows[0];
-
-    // Devolver os dados formatados
-    return res.status(200).json({
-      averageRating: averageRating || 0,
-      totalRatings: totalRatings || 0
-    });
-  } catch (error) {
-    console.error('Erro ao buscar rating médio do guia:', error);
-    return res.status(500).json({ error: 'Erro ao buscar rating médio' });
-  }
-});
-
-        
-
-        const guides = Array.from(guideMap.values());
-        console.log(guides);
+        console.log(results);
         res.status(200).json({ message: 'Tours Listed Succesfully', results});
     });
 });
@@ -729,4 +710,5 @@ app.get('/guides', async (req, res) => {
     console.error('Erro ao buscar guias:', error);
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
+
 });
