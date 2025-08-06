@@ -61,35 +61,39 @@ export const AuthProvider = ({ children }) => {
     email,
     password,
     fullName,
-    user_type = 0,
+    user_type = 0,      
     profileImage = null,
     vehicleData = null
   ) => {
+    console.log('signup called!!!')
     try {
-      const brand = vehicleData?.brand ?? null;
-      const model = vehicleData?.model ?? null;
-      const color = vehicleData?.color ?? null;
-      const registration = vehicleData?.licensePlate ?? null;
+      const formDataToSend = new FormData();
+      formDataToSend.append('email', email);
+      formDataToSend.append('password', password);
+      formDataToSend.append('fullName', fullName);
+      formDataToSend.append('user_type', user_type);
+      formDataToSend.append('profileImage', profileImage); // This should be a File object
 
-      const res = await axios.post('http://localhost:8000/register', {
-        email,
-        password,
-        fullName,
-        user_type,
-        profileImage,
-        brand,
-        model,
-        color,
-        registration
-      }, {
-        withCredentials: true
+      if (vehicleData) {
+        formDataToSend.append('registration', vehicleData.licensePlate);
+        formDataToSend.append('brand', vehicleData.brand);
+        formDataToSend.append('model', vehicleData.model);
+        formDataToSend.append('color', vehicleData.color);
+        formDataToSend.append('capacity', vehicleData.seatingCapacity);
+        formDataToSend.append('description', vehicleData.additionalInfo);
+      }
+      console.log(formDataToSend);
+      const res = await axios.post('http://localhost:8000/register', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
-
+// 
       setUser(res.data.user);
-      setUserProfile(res.data.user); // Guardar el objeto user completo, incluyendo profileImage
+      setUserProfile(res.data.user.profile_image ?? null);
       return res.data;
     } catch (err) {
-      console.error('Erro no registo:', err);
+      console.error('Erro no signUp:', err);
       throw err;
     }
   };
