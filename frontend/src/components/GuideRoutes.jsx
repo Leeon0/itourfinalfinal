@@ -88,13 +88,13 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                     <Typography variant="body2" color="text.secondary">{guide.email}</Typography>
                   </Box>
                   <Box display="flex" alignItems="center" sx={{ mt: 0.5, mb: 0.5 }}>
-                    <Rating value={guideRating.averageRating} precision={0.1} size="small" readOnly />
+                    <Rating value={guide.averageRatings} precision={0.1} size="small" readOnly />
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                      ({guideRating.averageRating.toFixed(1)}) • {guideRating.totalRatings} avaliação{guideRating.totalRatings !== 1 ? 's' : ''}
+                      ({Number(guide.averageRatings).toFixed(1)}) • {guide.totalRatings} review{guide.totalRatings !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    Membro desde {guide.created_at ? new Date(guide.created_at).toLocaleDateString('pt-PT') : 'N/D'}
+                    Member since {guide.created_at ? new Date(guide.created_at).toLocaleDateString('pt-PT') : 'N/D'}
                   </Typography>
                   <Box sx={{ mt: 1 }}>
                     <Chip label="Guia" size="small" sx={{ backgroundColor: '#FFC107', color: '#000' }} />
