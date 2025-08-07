@@ -83,12 +83,8 @@ export const AuthProvider = ({ children }) => {
         formDataToSend.append('description', vehicleData.additionalInfo);
       }
       console.log(formDataToSend);
-      const res = await axios.post('http://localhost:8000/register', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-// 
+      const res = await axios.post('http://localhost:8000/register', formDataToSend);
+      
       setUser(res.data.user);
       setUserProfile(res.data.user.profile_image ?? null);
       return res.data;
@@ -117,19 +113,32 @@ export const AuthProvider = ({ children }) => {
     if (!user || !user.id) {
       throw new Error('Utilizador não autenticado');
     }
-
     try {
       const userId = user.id;
 
-      const res = await axios.put(`http://localhost:8000/users/${userId}`, updateData, {
-        withCredentials: true
-      });
+      const formData = new FormData();
+      formData.append('id', updateData.id);
+      formData.append('name', updateData.name);
+      formData.append('profileImage', updateData.profileImage); // ✅ File object
 
+      // Flatten vehicleData
+      if (updateData.vehicleData) {
+        formData.append('licensePlate', updateData.vehicleData.licensePlate);
+        formData.append('brand', updateData.vehicleData.brand);
+        formData.append('model', updateData.vehicleData.model);
+        formData.append('color', updateData.vehicleData.color);
+        formData.append('seatingCapacity', updateData.vehicleData.seatingCapacity);
+        formData.append('additionalInfo', updateData.vehicleData.additionalInfo);
+      }
+      console.log('Dados a enviar para o backend update!!', formData)
+      const res = await axios.put(`http://localhost:8000/users/${userId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      console.log('recebi do backend:', res)
       // Atualizar localmente o estado do perfil
-      setUserProfile(prev => ({
-        ...prev,
-        ...updateData
-      }));
+      setUser(res.data.user);
 
       return res.data;
     } catch (error) {
