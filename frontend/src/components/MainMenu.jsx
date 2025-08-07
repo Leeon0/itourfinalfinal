@@ -34,7 +34,7 @@ const MainMenu = ({
   onShowReservation,
   onShowGuideRequests,
 }) => {
-  const { user, userProfile, signOut, isGuide } = useAuth();
+  const { user, signOut, isGuide } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [visible, setVisible] = React.useState(true);
@@ -159,8 +159,10 @@ const MainMenu = ({
           {/* Informações do utilizador */}
           <Box sx={{ p: 2, borderBottom: '1px solid #FFC107', width: '80%', alignSelf: 'center' }}>
             <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
-              {userProfile?.profileImage ? (
-                <Avatar src={userProfile.profileImage} sx={{ width: 60, height: 60, mr: 2 }} />
+              {user?.profile_image ? (
+                <Avatar 
+                  src= {`http://localhost:8000/${user.profile_image}`}  
+                  sx= {{ width: 60, height: 60, mr: 2 }} />
               ) : (
                 <Avatar sx={{ width: 60, height: 60, mr: 2, bgcolor: 'grey.400' }}>
                   <PersonIcon sx={{ fontSize: 30 }} />
@@ -168,7 +170,7 @@ const MainMenu = ({
               )}
               <Box flex={1}>
                 <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
-                  {userProfile?.name || user?.displayName || 'Utilizador'}
+                  {user?.name || user?.displayName || 'Utilizador'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   {user?.email}
