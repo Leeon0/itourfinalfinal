@@ -19,13 +19,21 @@ export const AuthProvider = ({ children }) => {
   const [userProfile, setUserProfile] = useState(null); // Perfil (ex. info extra)
   const [loading, setLoading] = useState(true); // Carregamento inicial
 
-  // Efeito para verificar se o utilizador já está autenticado (cookies/session)
+  // Efecto para cargar el usuario completo (con datos del coche) si está autenticado
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await api.get('/user'); // Endpoint que devolve info do user logado
-        setUser(res.data);
-        setUserProfile(res.data.profile ?? null); // opcional: pode vir info extra
+        // Primero intenta obtener el usuario básico
+        const res = await api.get('/user');
+        if (res.data && res.data.id) {
+          // Si existe id, pide el usuario completo
+          const fullRes = await api.get(`/users/${res.data.id}`);
+          setUser(fullRes.data.user);
+          setUserProfile(fullRes.data.user.profile ?? null);
+        } else {
+          setUser(null);
+          setUserProfile(null);
+        }
       } catch (err) {
         setUser(null);
         setUserProfile(null);
@@ -33,7 +41,6 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
-
     checkAuth();
   }, []);
 

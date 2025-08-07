@@ -27,9 +27,9 @@ app.use(cors({
 // Create a connection to the MySQL database
 const db = mysql.createConnection({
     host: "localhost", // Database host
-    user: "danialves",      // Database username
-    password: "AcinAcademy2025", // Database password
-    database: "itourdb" // Name of the database
+    user: "itadmin",      // Database username
+    password: "1234", // Database password
+    database: "iroutedb" // Name of the database
 });
 
 // Serves files from the uploads folder
@@ -129,7 +129,7 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
   let profile_image;
   profile_image = req.file? `uploads/${req.file.filename}` : null;
 
-	if (!name || !email || !password) {
+  if (!name || !email || !password) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -171,8 +171,30 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
                 [guide_id, registration, brand, model, color, capacity, description]
             );
         }
-        const user = userRow[0];
-
+        // Obtener el usuario completo con los datos del coche
+        const [fullUserRow] = await db.promise().query(
+          `SELECT 
+              u.id, 
+              u.name,
+              u.email,
+              u.password, 
+              u.type, 
+              u.created_at, 
+              u.profile_image, 
+              c.id AS car_id, 
+              c.registration, 
+              c.brand, 
+              c.model, 
+              c.color,
+              c.category, 
+              c.capacity AS seatingCapacity, 
+              c.description AS additionalInfo
+            FROM users u 
+              LEFT JOIN cars c ON (u.id = c.guide_id)
+            WHERE u.id = ?;`,
+          [userRow[0].id]
+        );
+        const user = fullUserRow[0];
         res.status(200).json({ message: 'User registered successfully', user });
     } catch (error) {
         console.error('Registration error:', error);
@@ -224,22 +246,22 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
     const [userRow] = await db.promise().query(
       `SELECT 
           u.id, 
-          name,
-          email,
-          password, 
-          type, 
+          u.name,
+          u.email,
+          u.password, 
+          u.type, 
           u.created_at, 
-          profile_image, 
+          u.profile_image, 
           c.id AS car_id, 
-          registration, 
-          brand, 
-          model, 
-          color,
-          category, 
-          capacity AS seatingCapacity, 
-          description AS additionalInfo
+          c.registration, 
+          c.brand, 
+          c.model, 
+          c.color,
+          c.category, 
+          c.capacity AS seatingCapacity, 
+          c.description AS additionalInfo
         FROM users u 
-          LEFT JOIN cars c ON (u.id = guide_id)
+          LEFT JOIN cars c ON (u.id = c.guide_id)
         WHERE u.id = ?;`,
         [id]
     );
