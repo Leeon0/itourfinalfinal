@@ -34,19 +34,19 @@ const UserProfile = ({ onClose }) => {
   const [success, setSuccess] = useState('');
   const [visible, setVisible] = useState(true);
   
-  console.log('UserProfile - userProfile:', userProfile);
-  console.log('UserProfile - userProfile.vehicleData:', userProfile?.vehicleData);  
+  console.log('UserProfile - userProfile:', user);
   
   const [editData, setEditData] = useState({
-    name: userProfile?.name || '',
-    profileImage: userProfile?.profileImage || null,
+    id: user?.id || '',
+    name: user?.name || '',
+    profileImage: user?.profile_image || null,
     vehicle: {
-      brand: userProfile?.vehicleData?.brand || '',
-      model: userProfile?.vehicleData?.model || '',
-      licensePlate: userProfile?.vehicleData?.licensePlate || '',
-      seatingCapacity: userProfile?.vehicleData?.seatingCapacity || '',
-      color: userProfile?.vehicleData?.color || '',
-      additionalInfo: userProfile?.vehicleData?.additionalInfo || ''
+      brand: user.brand || '',
+      model: user.model || '',
+      licensePlate: user.registration || '',
+      seatingCapacity: user.seatingCapacity || '',
+      color: user.color || '',
+      additionalInfo: user.additionalInfo || ''
     }
   });
 
@@ -74,10 +74,11 @@ const UserProfile = ({ onClose }) => {
       setError('');
       
       const updateData = {
+        id: editData.id,
         name: editData.name,
         profileImage: editData.profileImage
       };
-
+      
       if (isGuide()) {
         updateData.vehicleData = { 
           ...editData.vehicle,
@@ -107,15 +108,16 @@ const UserProfile = ({ onClose }) => {
 
   const handleCancel = () => {
     setEditData({
-      name: userProfile?.name || '',
-      profileImage: userProfile?.profileImage || null,
+      id: user?.id || '',
+      name: user?.name || '',
+      profileImage: user?.profile_image || null,
       vehicle: {
-        brand: userProfile?.vehicleData?.brand || '', 
-        model: userProfile?.vehicleData?.model || '', 
-        licensePlate: userProfile?.vehicleData?.licensePlate || '', 
-        seatingCapacity: userProfile?.vehicleData?.seatingCapacity || '', 
-        color: userProfile?.vehicleData?.color || '', 
-        additionalInfo: userProfile?.vehicleData?.additionalInfo || '' 
+        brand: user.brand || '',
+        model: user.model || '',
+        licensePlate: user.registration || '',
+        seatingCapacity: user.seatingCapacity || '',
+        color: user.color || '',
+        additionalInfo: user.additionalInfo || ''
       }
     });
     setIsEditing(false);
@@ -164,7 +166,7 @@ const UserProfile = ({ onClose }) => {
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
                   <ImageUpload
                     value={editData.profileImage}
-                    onChange={(base64) => handleChange('profileImage', base64)}
+                    onChange={(file) => setEditData({...editData, profileImage: file})} //onChange={(base64) => handleChange('profileImage', base64)}
                     label="Profile Picture"
                     circular
                   />
@@ -173,18 +175,27 @@ const UserProfile = ({ onClose }) => {
                 {/* Campo de nome */}
                 <TextField
                   fullWidth
-                  label="Nome"
+                  label="Name"
                   value={editData.name}
                   onChange={(e) => handleChange('name', e.target.value)}
-                  sx={{ mb: 2, borderRadius: '12px'}}
+                  color='black'
+                  variant="outlined"
+                    sx={{
+                    '& .MuiOutlinedInput-root': {
+                      borderRadius: '12px',
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: '#FFC107', 
+                          },
+                    }
+                  }}
                 />
               </Box>
             ) : (
               <Box display="flex" alignItems="center" sx={{ mb: 3 }}>
                 <Box sx={{ mr: 3, flexShrink: 0 }}>
-                  {(userProfile?.profileImage || userProfile?.profile_image) ? (
+                  {user?.profile_image ? (
                     <Avatar 
-                      src={userProfile.profileImage || userProfile.profile_image} 
+                      src={`http://localhost:8000/${user.profile_image}`} 
                       sx={{ width: 80, height: 80 }}
                     />
                   ) : (
@@ -205,7 +216,7 @@ const UserProfile = ({ onClose }) => {
                       overflowWrap: 'break-word'
                     }}
                   >
-                    {userProfile?.name || 'Nome não definido'}
+                    {user?.name || 'Nome não definido'}
                   </Typography>
                   
                   <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
@@ -232,7 +243,7 @@ const UserProfile = ({ onClose }) => {
                       wordBreak: 'break-word'
                     }}
                   >
-                    Member since {userProfile?.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('pt-BR') : 'Data não disponível'}
+                    Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}
                   </Typography>
                   
                   <Chip
@@ -259,19 +270,124 @@ const UserProfile = ({ onClose }) => {
               <Box>
 
                 {isEditing ? (
-                  // ...existing code...
                   <Stack spacing={3}>
-                    {/* ...campos de edición... */}
+                    <Box display="flex" gap={2}>
+                      <TextField
+                        label="Brand"
+                        value={editData.vehicle.brand}
+                        onChange={(e) => handleChange('vehicle.brand', e.target.value)}
+                        color='black'
+                        fullWidth
+                        variant="outlined"
+                         sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#FFC107', 
+                                },
+                          }
+                        }}
+                      />
+                      <TextField
+                        label="Model"
+                        value={editData.vehicle.model}
+                        onChange={(e) => handleChange('vehicle.model', e.target.value)}
+                        color='black'
+                        fullWidth
+                        variant="outlined"
+                         sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#FFC107', 
+                                },
+                          }
+                        }}
+                      />
+                    </Box>
+                    
+                    <Box display="flex" gap={2}>
+                      <TextField
+                        label="License Plate"
+                        value={editData.vehicle.licensePlate}
+                        onChange={(e) => handleChange('vehicle.licensePlate', e.target.value)}
+                        color='black'
+                        fullWidth
+                        variant="outlined"
+                         sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#FFC107', 
+                                },
+                          }
+                        }}
+                      />
+                      <TextField
+                        label="Color"
+                        value={editData.vehicle.color}
+                        onChange={(e) => handleChange('vehicle.color', e.target.value)}
+                        color='black'
+                        fullWidth
+                        variant="outlined"
+                         sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: '12px',
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                  borderColor: '#FFC107', 
+                                },
+                          }
+                        }}
+                      />
+                    </Box>
+                    
+                    <TextField
+                      label="Seating Capacity"
+                      type="number"
+                      value={editData.vehicle.seatingCapacity}
+                      onChange={(e) => handleChange('vehicle.seatingCapacity', e.target.value)}
+                      inputProps={{ min: 1, max: 50 }}
+                      color='black'
+                      variant="outlined"
+                        sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#FFC107', 
+                              },
+                        }
+                      }}
+                    />
+                    
+                    <TextField
+                      label="Additional Information"
+                      multiline
+                      rows={3}
+                      value={editData.vehicle.additionalInfo}
+                      onChange={(e) => handleChange('vehicle.additionalInfo', e.target.value)}
+                      color='black'
+                      variant="outlined"
+                        sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '12px',
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#FFC107', 
+                              },
+                        }
+                      }}
+                    />
                   </Stack>
                 ) : (
                   <Box>
-                    {/* Mostrar datos del vehículo si existen en vehicleData o directamente en userProfile */}
-                    {(() => {
-                      // Prioridad: vehicleData, luego campos directos
-                      const v = userProfile?.vehicleData || userProfile;
-                      const hasVehicle = v && (v.brand || v.model || v.licensePlate || v.color || v.seatingCapacity || v.additionalInfo);
-                      if (hasVehicle) {
-                        return (
+                    {user.registration? (
+                      <Box>
+                        {(user.brand || 
+                          user.model || 
+                          user.registration || 
+                          user.color || 
+                          user.seatingCapacity ||
+                          user.additionalInfo) ? (
+                          
                           <Box sx={{ 
                             backgroundColor: 'rgba(250, 213, 64, 0.1)', 
                             borderRadius: 2, 
@@ -282,17 +398,18 @@ const UserProfile = ({ onClose }) => {
                             <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
                               <CarIcon sx={{ mr: 1, color: 'black', fontSize: 33 }} />
                               <Typography variant="h6" fontWeight="bold" sx={{ color: '#333' }}>
-                                {v.brand && v.model 
-                                  ? `${v.brand} ${v.model}`
-                                  : v.brand || v.model || 'Vehicle'
+                                {user.brand && user.model 
+                                  ? `${user.brand} ${user.model}`
+                                  : user.brand || user.model || 'Vehicle'
                                 }
                               </Typography>
                             </Box>
+                            
                             {/* Chips de informações principais */}
                             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
-                              {v.seatingCapacity && (
+                              {user.seatingCapacity && (
                                 <Chip 
-                                  label={`${v.seatingCapacity} seats`} 
+                                  label={`${user.seatingCapacity} seats`} 
                                   size="medium"
                                   icon={<PersonIcon />}
                                   sx={{
@@ -302,9 +419,9 @@ const UserProfile = ({ onClose }) => {
                                   }}
                                 />
                               )}
-                              {v.color && (
+                              {user.color && (
                                 <Chip 
-                                  label={v.color} 
+                                  label={user.color} 
                                   size="medium"
                                   sx={{
                                     backgroundColor: '#333',
@@ -313,9 +430,9 @@ const UserProfile = ({ onClose }) => {
                                   }}
                                 />
                               )}
-                              {v.licensePlate && (
+                              {user.registration && (
                                 <Chip 
-                                  label={v.licensePlate} 
+                                  label={user.registration} 
                                   size="medium"
                                   sx={{
                                     backgroundColor: '#f5f5f5',
@@ -326,8 +443,9 @@ const UserProfile = ({ onClose }) => {
                                 />
                               )}
                             </Stack>
+                            
                             {/* Informações adicionais */}
-                            {v.additionalInfo && (
+                            {user.additionalInfo && (
                               <Box sx={{ 
                                 backgroundColor: 'rgba(255, 255, 255, 0.7)', 
                                 borderRadius: 1, 
@@ -335,14 +453,12 @@ const UserProfile = ({ onClose }) => {
                                 mt: 2
                               }}>
                                 <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                  "{v.additionalInfo}"
+                                  "{user.additionalInfo}"
                                 </Typography>
                               </Box>
                             )}
                           </Box>
-                        );
-                      } else {
-                        return (
+                        ) : (
                           <Box sx={{ 
                             textAlign: 'center', 
                             py: 4,
@@ -358,9 +474,21 @@ const UserProfile = ({ onClose }) => {
                               Click "Edit Profile" to add your vehicle details
                             </Typography>
                           </Box>
-                        );
-                      }
-                    })()}
+                        )}
+                      </Box>
+                    ) : (
+                      <Box sx={{ 
+                        textAlign: 'center', 
+                        py: 4,
+                        backgroundColor: 'rgba(244, 67, 54, 0.05)',
+                        borderRadius: 2,
+                        border: '1px dashed #f44336'
+                      }}>
+                        <Typography variant="body2" color="error">
+                          Vehicle data not found
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
               </Box>
