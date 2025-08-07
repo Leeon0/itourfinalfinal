@@ -4,6 +4,7 @@ const express = require('express'); // Express framework for handling HTTP reque
 const mysql = require('mysql2'); // MySQL2 client for Node.js
 const cors = require('cors'); // For web security
 const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 const multer = require('multer');
 const storage = multer.diskStorage({
@@ -26,13 +27,14 @@ app.use(cors({
 // Create a connection to the MySQL database
 const db = mysql.createConnection({
     host: "localhost", // Database host
-    user: "itadmin",      // Database username
-    password: "1234", // Database password
-    database: "iroutedb" // Name of the database
+    user: "danialves",      // Database username
+    password: "AcinAcademy2025", // Database password
+    database: "itourdb" // Name of the database
 });
 
 // Serves files from the uploads folder
 app.use('/uploads', express.static('uploads'));
+
 
 // Define a route for the root URL '/'
 app.get('/', (req, res) => {
@@ -74,7 +76,25 @@ app.post('/login', (req, res) => {
     
     if (email && password) {
         db.query(
-            'SELECT * FROM users WHERE email = ?', 
+            `SELECT 
+              u.id, 
+              name,
+              email,
+              password, 
+              type, 
+              u.created_at, 
+              profile_image, 
+              c.id AS car_id, 
+              registration, 
+              brand, 
+              model, 
+              color,
+              category, 
+              capacity AS seatingCapacity, 
+              description AS additionalInfo
+            FROM users u 
+              LEFT JOIN cars c ON (u.id = guide_id)
+            WHERE email = ?;`, 
             [email], function(error, results, fields) 
             {
                 if (error) {
@@ -86,9 +106,9 @@ app.post('/login', (req, res) => {
                     const user = results[0];
                     const match = bcrypt.compare(password, user.password); // compare plaintext with hash
                     if (match) {
-                    res.status(200).json({ message: 'Login successful', user });
+                      res.status(200).json({ message: 'Login successful', user });
                     } else {
-                    res.status(401).json({ error: 'Invalid credentials' });
+                      res.status(401).json({ error: 'Invalid credentials' });
                     }
                 } else {
                     res.status(401).json({ error: 'Invalid credentials' });
@@ -99,7 +119,6 @@ app.post('/login', (req, res) => {
 
 // User Register
 app.post('/register', upload.single('profileImage'), async (req, res) => {
-  console.log('entrei no register!')
   let name = req.body.fullName;
   let email = req.body.email;
   let password = req.body.password;
@@ -107,7 +126,8 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
   let hasCar;
   hasCar = type && req.body.registration != null? hasCar = 1 : hasCar = 0;
   let created_at = new Date();
-  const profile_image = `uploads/${req.file.filename}`;
+  let profile_image;
+  profile_image = req.file? `uploads/${req.file.filename}` : null;
 
 	if (!name || !email || !password) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -132,7 +152,6 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
 
         // If user has a car, insert car info
         if (hasCar) {
-            console.log('this guide has a car!')
             let registration = req.body.registration;
             let brand = req.body.brand;
             let model = req.body.model;
@@ -166,6 +185,71 @@ app.post('/logout', async (req, res) => {
     res.clearCookie();
     res.status(200).json({ message: 'Logout Successful' })
 });
+
+// Update User Profile
+app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
+  console.log('o que recebi do frontend:', req.body)
+  let id = req.body.id;
+  let name = req.body.name;
+  let profile_image;
+  profile_image = req.file? `uploads/${req.file.filename}` : null;
+
+  try {
+    // if user uploaded a new photo, change photo
+    if (profile_image) {
+      db.query(
+        `UPDATE users SET name = ?, profile_image = ? WHERE id = ?;`,
+        [name, profile_image, id]
+      );
+    }
+    else {
+      db.query(
+        `UPDATE users SET name = ? WHERE id = ?;`,
+        [name, id]
+      );
+    }
+    // if user is a guide, change car info
+    if (req.body.licensePlate) {
+      let registration = req.body.licensePlate;
+      let brand = req.body.brand;
+      let model = req.body.model;
+      let color = req.body.color;
+      let capacity = req.body.seatingCapacity;
+      let description = req.body.additionalInfo;
+      db.query(
+        `UPDATE cars SET registration = ?, brand = ?, model = ?, color = ?, capacity = ?, description = ? WHERE guide_id = ?;`,
+        [registration, brand, model, color, capacity, description, id]
+      );
+    }
+    const [userRow] = await db.promise().query(
+      `SELECT 
+          u.id, 
+          name,
+          email,
+          password, 
+          type, 
+          u.created_at, 
+          profile_image, 
+          c.id AS car_id, 
+          registration, 
+          brand, 
+          model, 
+          color,
+          category, 
+          capacity AS seatingCapacity, 
+          description AS additionalInfo
+        FROM users u 
+          LEFT JOIN cars c ON (u.id = guide_id)
+        WHERE u.id = ?;`,
+        [id]
+    );
+    const user = userRow[0];
+    res.status(200).json({ message: 'User Profile updated successfully', user });
+  } catch (error) {
+      console.error('Update error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+}) 
 
 
 /********************************/
@@ -346,7 +430,7 @@ app.get('/guides', (req, res) => {
             (SELECT 
                 guide_id, 
                 ROUND(AVG(rating_guide)/10, 2) AS averageRatings,
-                COUNT(*) AS totalRatings 
+                COUNT(*) AS totalRatings
             FROM reservations 
             GROUP BY guide_id), 
         number_tours AS
@@ -380,14 +464,12 @@ app.get('/guides', (req, res) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
-        console.log(results);
-        res.status(200).json({ message: 'Tours Listed Succesfully', results});
+        res.status(200).json({ message: 'Guides Listed Succesfully', results});
     });
 });
 
 // Fetch the Tours of a specific Guide
 app.get('/routes/guide/:guideID', (req, res) => {
-    console.log('vou ver as rotas do guia')
     guideID = req.params["guideID"]
     db.query(
         `WITH number AS 
@@ -413,7 +495,6 @@ app.get('/routes/guide/:guideID', (req, res) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
-        console.log(results);
         res.status(200).json({ message: 'Tours Listed Succesfully', results});
     });
 });
@@ -712,6 +793,4 @@ app.get('/guides', async (req, res) => {
     console.error('Erro ao buscar guias:', error);
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
-
 });
-
