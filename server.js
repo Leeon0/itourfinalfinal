@@ -283,6 +283,24 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
 // Fetch All Tours
 
 // Fetch All Routes ()
+// Endpoint para obtener los lugares de una ruta
+app.get('/routes/:routeId/places', async (req, res) => {
+  const { routeId } = req.params;
+  try {
+    const [places] = await db.promise().query(
+      `SELECT p.id, p.name, p.latitude, p.longitude, p.category, v.order
+       FROM visits v
+       JOIN places p ON v.place_id = p.id
+       WHERE v.tour_id = ?
+       ORDER BY v.order ASC`,
+      [routeId]
+    );
+    res.status(200).json({ places });
+  } catch (error) {
+    console.error('Error fetching route places:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 app.get('/routes', (req, res) => {
     db.query('SELECT * FROM tours', (error, results) => {
         if (error) {

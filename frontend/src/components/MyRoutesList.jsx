@@ -202,7 +202,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
       {/* Chips */}
       <Stack direction="row" gap={1} flexWrap="wrap">
         <Chip
-          label={`${route.locations?.length || 0} locations`}
+          label={`${(activeRoute?.id === route.id ? activeRoute.locations?.length : route.locations?.length) || 0} locations`}
           size="small"
           sx={{
             backgroundColor: activeRoute?.id === route.id ? '#333' : '#FFC107',
@@ -225,9 +225,9 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
       </Stack>
 
       {/* Locations preview */}
-      {route.locations?.length > 0 && (
-        <Box sx={{ maxHeight: '60px', overflow: 'hidden', mt: 1 }}>
-          {route.locations.slice(0, 4).map((location, index) => (
+      {(activeRoute?.id === route.id ? activeRoute.locations?.length : route.locations?.length) > 0 && (
+        <Box sx={{ maxHeight: '120px', overflow: 'auto', mt: 1 }}>
+          {(activeRoute?.id === route.id ? activeRoute.locations : route.locations).map((location, index) => (
             <Box key={index} display="flex" alignItems="center">
               <Box
                 sx={{
@@ -253,11 +253,6 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
               </Typography>
             </Box>
           ))}
-          {route.locations.length > 4 && (
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.70rem', fontStyle: 'italic' }}>
-              +{route.locations.length - 4} more locations...
-            </Typography>
-          )}
         </Box>
       )}
 
