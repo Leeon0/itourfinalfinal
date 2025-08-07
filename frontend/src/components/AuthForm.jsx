@@ -106,7 +106,6 @@ const AuthForm = () => {
           }
         }
 
-
         const vehicleData = currentView === 'register-guide' ? {
           brand: formData.vehicleBrand,
           model: formData.vehicleModel,
@@ -116,7 +115,7 @@ const AuthForm = () => {
           additionalInfo: formData.additionalInfo
         } : null;
 
-        const userType = currentView === 'register-guide' ? 'guia' : 'turista';
+        const userType = currentView === 'register-guide' ? 1 : 0;
 
         result = await signUp(
           formData.email, 
@@ -624,7 +623,7 @@ const AuthForm = () => {
                 <Box sx={{ mb: 3}}>
                   <ImageUpload
                     value={formData.profileImage}
-                    onChange={(base64) => setFormData({...formData, profileImage: base64})}
+                    onChange={(file) => setFormData({...formData, profileImage: file})}
                       label={
                         <Typography variant="body2" sx={{color: '#374151' , textAlign: 'left'}}>
                           Profile Photo (Optional)
@@ -902,7 +901,7 @@ const AuthForm = () => {
             <Box sx={{ mb: 3 }}>
               <ImageUpload
                 value={formData.profileImage}
-                onChange={(base64) => setFormData({...formData, profileImage: base64})}
+                onChange={(file) => setFormData({...formData, profileImage: file})}
                 label="Profile Photo (Optional)"
               />
             </Box>
