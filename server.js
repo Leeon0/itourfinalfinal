@@ -71,51 +71,56 @@ app.listen(8000, () => {
 
 // User Login
 app.post('/login', (req, res) => {
-    let email = req.body.email;
-    let password = req.body.password;
-    
-    if (email && password) {
-        db.query(
-            `SELECT 
-              u.id, 
-              name,
-              email,
-              password, 
-              type, 
-              u.created_at, 
-              profile_image, 
-              c.id AS car_id, 
-              registration, 
-              brand, 
-              model, 
-              color,
-              category, 
-              capacity AS seatingCapacity, 
-              description AS additionalInfo
-            FROM users u 
-              LEFT JOIN cars c ON (u.id = guide_id)
-            WHERE email = ?;`, 
-            [email], function(error, results, fields) 
-            {
-                if (error) {
-                    console.error('Error during login:', error);
-                    return res.status(500).json({ error: 'Internal server error' });
-                }
-                // If the account exists
-                if (results.length > 0) {
-                    const user = results[0];
-                    const match = bcrypt.compare(password, user.password); // compare plaintext with hash
-                    if (match) {
-                      res.status(200).json({ message: 'Login successful', user });
-                    } else {
-                      res.status(401).json({ error: 'Invalid credentials' });
-                    }
-                } else {
-                    res.status(401).json({ error: 'Invalid credentials' });
-                }
-            });   
-    }; 
+  const { email, password } = req.body;
+
+  if (email && password) {
+    db.query(
+      `SELECT 
+        u.id, 
+        name,
+        email,
+        password, 
+        type, 
+        u.created_at, 
+        profile_image, 
+        c.id AS car_id, 
+        registration, 
+        brand, 
+        model, 
+        color,
+        category, 
+        capacity AS seatingCapacity, 
+        description AS additionalInfo
+      FROM users u 
+        LEFT JOIN cars c ON (u.id = guide_id)
+      WHERE email = ?;`,
+      [email],
+      async (error, results) => { 
+        if (error) {
+          console.error('Error during login:', error);
+          return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        if (results.length > 0) {
+          const user = results[0];
+          const normalizedHash = user.password.replace(/^\$2y\$/, '$2b$');
+          const match = await bcrypt.compare(password, normalizedHash); 
+
+          if (match) {
+            res.status(200).json({ message: 'Login successful', user });
+          } else {
+            res.status(401).json({ error: 'Invalid credentials' });
+          }
+        } else {
+          res.status(401).json({ error: 'Invalid credentials' });
+        }
+      }
+    );
+  } else {
+    res.status(400).json({ error: 'Email and password required' });
+  }
 });
+
 
 // User Register
 app.post('/register', upload.single('profileImage'), async (req, res) => {
@@ -171,9 +176,27 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
                 [guide_id, registration, brand, model, color, capacity, description]
             );
         }
-        const user = userRow[0];
-
-        res.status(200).json({ message: 'User registered successfully', user });
+        const [carRow] = await db.promise().query(
+            `SELECT 
+                c.id AS car_id, 
+                registration, 
+                brand, 
+                model, 
+                color, 
+                category, 
+                capacity AS seatingCapacity, 
+                description AS additionalInfo 
+            FROM users u 
+              LEFT JOIN cars c ON (u.id = guide_id)
+            WHERE guide_id = ?`,
+            [userRow[0].id]
+        );
+        const userWithCar = {
+            ...userRow[0],
+            ...(carRow[0] ? carRow[0] : {})
+        };
+        console.log('o que mandei',userWithCar)
+        res.status(200).json({ message: 'User registered successfully', userWithCar });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -188,7 +211,6 @@ app.post('/logout', async (req, res) => {
 
 // Update User Profile
 app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
-  console.log('o que recebi do frontend:', req.body)
   let id = req.body.id;
   let name = req.body.name;
   let profile_image;
@@ -260,12 +282,37 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
 
 // Fetch All Tours
 
-// Fetch All Routes ()
+app.get('/routes/:routeId/places', async (req, res) => {
+  const { routeId } = req.params;
+  try {
+    const [places] = await db.promise().query(
+      `SELECT 
+        p.id, 
+        p.name, 
+        p.latitude, 
+        p.longitude, 
+        p.category, 
+        v.order
+      FROM visits v
+        JOIN places p ON v.place_id = p.id
+      WHERE v.tour_id = ?
+      ORDER BY v.order ASC`,
+      [routeId]
+    );
+    res.status(200).json({ places });
+  } catch (error) {
+    console.error('Error fetching route places:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}); 
+
+// Fetch All Routes 
 app.get('/routes', (req, res) => {
     db.query('SELECT * FROM tours', (error, results) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
+
         // Formatear la fecha created_at a formato legible (ej: DD/MM/YYYY HH:mm)
         const formattedResults = results.map(route => {
             let formattedDate = '';
@@ -296,16 +343,6 @@ app.get('/routes', (req, res) => {
         res.status(200).json(formattedResults);
     });
 });
-app.get('/tours', (req, res) => {
-    db.query('SELECT * FROM tours', (error, results) => {
-        if (error) {
-            res.status(500).json({ message: 'Internal server error' });
-        }
-        res.status(200).json({ message: 'Tours Listed Succesfully', results});
-    });
-});
-
-// server.js (CONTINUAÇÃO COM ROTAS POST, PUT, DELETE PARA ROUTES)
 
 // Criar nova rota
 app.post('/routes', async (req, res) => {
@@ -469,36 +506,75 @@ app.get('/guides', (req, res) => {
 });
 
 // Fetch the Tours of a specific Guide
-app.get('/routes/guide/:guideID', (req, res) => {
-    guideID = req.params["guideID"]
-    db.query(
-        `WITH number AS 
-            (SELECT 
-                tour_id, 
-                count(*) AS locations 
-            FROM visits 
-            GROUP BY tour_id) 
-        SELECT 
-            w.tour_id AS id,
-            t.name AS name,
-            t.created_at AS created_at, 
-            w.guide_id AS guide_id,   
-            t.duration, 
-            locations
-        FROM tours t 
-            JOIN works w ON (t.id = tour_id) 
-            JOIN users g ON (g.id = guide_id) 
-            JOIN number n ON (n.tour_id = t.id) 
-        WHERE g.id = ?;`,
-        [guideID] ,
-        (error, results) => {
-        if (error) {
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-        res.status(200).json({ message: 'Tours Listed Succesfully', results});
-    });
-});
+app.get('/routes/guide/:guideID', async (req, res) => {
+    const guideID = req.params["guideID"];
 
+    try {
+        // First query: get tours for the guide
+        const [results] = await db.promise().query(
+            `WITH number AS 
+                (SELECT 
+                    tour_id, 
+                    count(*) AS locations 
+                FROM visits 
+                GROUP BY tour_id) 
+            SELECT 
+                w.tour_id AS id,
+                t.name AS name,
+                t.created_at AS created_at, 
+                w.guide_id AS guide_id,   
+                t.duration, 
+                t.tour_image,
+                locations
+            FROM tours t 
+                JOIN works w ON (t.id = tour_id) 
+                JOIN users g ON (g.id = guide_id) 
+                JOIN number n ON (n.tour_id = t.id) 
+            WHERE g.id = ?;`,
+            [guideID]
+        );
+
+        // Second query: get locations for each tour
+        const routesWithLocations = await Promise.all(results.map(async (route) => {
+            try {
+                const [places] = await db.promise().query(
+                    `SELECT 
+                      p.id, 
+                      p.name, 
+                      p.latitude,
+                      p.longitude, 
+                      p.category, 
+                      v.order
+                    FROM visits v
+                      JOIN places p ON v.place_id = p.id
+                    WHERE v.tour_id = ?
+                    ORDER BY v.order ASC`,
+                    [route.id]
+                );
+
+                const locations = places.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    latitude: p.latitude,
+                    longitude: p.longitude,
+                    category: p.category,
+                    order: p.order
+                }));
+
+                return { ...route, locations };
+            } catch (err) {
+                console.error(`Error fetching places for tour ${route.id}:`, err);
+                return { ...route, locations: [] };
+            }
+        }));
+
+        // Send the final response
+        res.status(200).json({ message: 'Tours Listed Successfully', results: routesWithLocations });
+    } catch (error) {
+        console.error('Error fetching tours:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
 
 
 
@@ -565,7 +641,7 @@ app.get('/reservations/user/:userId', async (req, res) => {
       reserva.selected_hours = JSON.parse(reserva.selected_hours || '[]');
     });
 
-    return res.status(200).json(rows);
+    return res.status(200).json({message: 'Reservations listed successfully', results: rows});
   } catch (error) {
     console.error('Erro ao buscar reservas do utilizador:', error);
     return res.status(500).json({ error: 'Erro ao buscar reservas' });
