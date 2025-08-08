@@ -30,7 +30,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
       try {
         setLoading(true);
         setError('');
-
+        console.log('Fetching routes for guide:', guide);
         // Buscar rotas do guia
         const res = await axios.get(`http://localhost:8000/routes/guide/${guide.id}`);
         setRoutes(res.data.results || []);
@@ -218,6 +218,16 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                             variant={activeRoute?.id === route.id ? "filled" : "outlined"}
                           />
                         </Stack>
+                        {/* Lista de nomes dos locais */}
+                        {route.locations && route.locations.length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <ul style={{ paddingLeft: 18, margin: 0 }}>
+                              {route.locations.map(local => (
+                                <li key={local.id} style={{ fontSize: '0.95em', color: '#333' }}>{local.name}</li>
+                              ))}
+                            </ul>
+                          </Box>
+                        )}
 
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                           <Typography variant="caption" color="text.secondary">

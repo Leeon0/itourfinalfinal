@@ -283,6 +283,7 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
 // Fetch All Tours
 
 // Fetch All Routes ()
+
 // Endpoint para obtener los lugares de una ruta
 app.get('/routes/:routeId/places', async (req, res) => {
   const { routeId } = req.params;
@@ -301,6 +302,11 @@ app.get('/routes/:routeId/places', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+
+
+
 app.get('/routes', (req, res) => {
     db.query('SELECT * FROM tours', (error, results) => {
         if (error) {
@@ -510,32 +516,50 @@ app.get('/guides', (req, res) => {
 
 // Fetch the Tours of a specific Guide
 app.get('/routes/guide/:guideID', (req, res) => {
-    guideID = req.params["guideID"]
-    db.query(
-        `WITH number AS 
-            (SELECT 
-                tour_id, 
-                count(*) AS locations 
-            FROM visits 
-            GROUP BY tour_id) 
+    const guideID = req.params["guideID"];
+    console.log('Guide ID:', guideID);
+    const sql = `
         SELECT 
             w.tour_id AS id,
             t.name AS name,
             t.created_at AS created_at, 
             w.guide_id AS guide_id,   
-            t.duration, 
-            locations
+            t.duration
         FROM tours t 
-            JOIN works w ON (t.id = tour_id) 
-            JOIN users g ON (g.id = guide_id) 
-            JOIN number n ON (n.tour_id = t.id) 
-        WHERE g.id = ?;`,
-        [guideID] ,
-        (error, results) => {
+            JOIN works w ON (t.id = w.tour_id) 
+            JOIN users g ON (g.id = w.guide_id) 
+        WHERE g.id = ?;`;
+    db.query(sql, [guideID], async (error, results) => {
         if (error) {
-            return res.status(500).json({ message: 'Internal server error' });
+            console.error('Erro ao buscar rotas do guia:', error);
+            return res.status(500).json({ message: 'Internal server error', error });
         }
-        res.status(200).json({ message: 'Tours Listed Succesfully', results});
+        // Para cada ruta, buscar los lugares (paradas) y devolverlos en locations
+        const routesWithLocations = await Promise.all(results.map(async (route) => {
+            try {
+                const [places] = await db.promise().query(
+                    `SELECT p.id, p.name, p.latitude, p.longitude, p.category, v.order
+                     FROM visits v
+                     JOIN places p ON v.place_id = p.id
+                     WHERE v.tour_id = ?
+                     ORDER BY v.order ASC`,
+                    [route.id]
+                );
+                // Formato igual que MyRoutes
+                const locations = places.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    latitude: p.latitude,
+                    longitude: p.longitude,
+                    category: p.category,
+                    order: p.order
+                }));
+                return { ...route, locations };
+            } catch (err) {
+                return { ...route, locations: [] };
+            }
+        }));
+        res.status(200).json({ message: 'Tours Listed Succesfully', results: routesWithLocations });
     });
 });
 
