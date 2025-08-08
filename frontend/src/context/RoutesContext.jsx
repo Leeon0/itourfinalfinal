@@ -26,7 +26,28 @@ export const RoutesProvider = ({ children }) => {
     setLoading(true);
     try {
       const response = await axios.get('/routes');
-      setRoutes(response.data);
+      console
+      const routesData = response.data;
+      // Para cada rota, obter os lugares visitados
+      const routesWithLocations = await Promise.all(
+        routesData.map(async (route) => {
+          try {
+            const res = await axios.get(`/routes/${route.id}/places`);
+            const places = res.data.places || [];
+            const locations = places.map(place => ({
+              id: place.id,
+              name: place.name,
+              position: [place.latitude, place.longitude],
+              category: place.category,
+              order: place.order
+            }));
+            return { ...route, locations };
+          } catch (err) {
+            return { ...route, locations: [] };
+          }
+        })
+      );
+      setRoutes(routesWithLocations);
     } catch (error) {
       console.error('Erro ao carregar rotas:', error);
     } finally {
@@ -91,8 +112,24 @@ export const RoutesProvider = ({ children }) => {
   };
 
   // Definir rota selecionada
-  const selectRoute = (route) => {
-    setActiveRoute(route);
+  const selectRoute = async (route) => {
+    try {
+      console.log('rota enviada para backend:',route)
+      const res = await axios.get(`/routes/${route.id}/places`);
+      const places = res.data.places || [];
+      // Formatar lugares visitados para o mapa (Leaflet precisa de coordenadas: [lat, lng])
+      const locations = places.map(place => ({
+        id: place.id,
+        name: place.name,
+        position: [place.latitude, place.longitude],
+        category: place.category,
+        order: place.order
+      }));
+      setActiveRoute({ ...route, locations });
+    } catch (error) {
+      console.error('Error fetching route places:', error);
+      setActiveRoute({ ...route, locations: [] });
+    }
   };
 
   // Limpar rota ativa
