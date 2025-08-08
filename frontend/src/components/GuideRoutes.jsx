@@ -30,14 +30,10 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
       try {
         setLoading(true);
         setError('');
-
         // Buscar rotas do guia
         const res = await axios.get(`http://localhost:8000/routes/guide/${guide.id}`);
+        console.log('rotas do guia', res.data.results)
         setRoutes(res.data.results || []);
-
-        // Buscar rating médio do guia
-        /*const ratingRes = await axios.get(`/ratings/guide/${guide.id}`);
-        setGuideRating(ratingRes.data || { averageRating: 0, totalRatings: 0 });*/
 
       } catch (err) {
         console.error('Erro ao buscar dados do guia:', err);
@@ -79,7 +75,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                 <Avatar 
                   src= {`http://localhost:8000/${guide.profile_image}`} 
                   sx={{ width: 80, height: 80, mr: 2 }}>
-                  {!guide.profileImage && <PersonIcon sx={{ fontSize: 40 }} />}
+                  {!guide.profile_image && <PersonIcon sx={{ fontSize: 40 }} />}
                 </Avatar>
                 <Box>
                   <Typography variant="h6" fontWeight="bold">{guide.name}</Typography>
@@ -90,7 +86,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                   <Box display="flex" alignItems="center" sx={{ mt: 0.5, mb: 0.5 }}>
                     <Rating value={guide.averageRatings} precision={0.1} size="small" readOnly />
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                      ({Number(guide.averageRatings).toFixed(1)}) • {guide.totalRatings} review{guide.totalRatings !== 1 ? 's' : ''}
+                      ({Number(guide.averageRatings).toFixed(1)}) • {guide.totalRatings || 0} review{guide.totalRatings !== 1 ? 's' : ''}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
@@ -190,8 +186,8 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
 
                         {/* Imagem */}
                         <Box sx={{ mb: 1 }}>
-                          {route.routeImageBase64 ? (
-                            <Avatar src={route.routeImageBase64} variant="rounded"
+                          {route.tour_image ? (
+                            <Avatar src= {`http://localhost:8000/${route.tour_image}`} variant="rounded"
                               sx={{ width: 300, height: 150, borderRadius: 2, boxShadow: 1 }} />
                           ) : (
                             <Avatar variant="rounded"
@@ -218,6 +214,17 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                             variant={activeRoute?.id === route.id ? "filled" : "outlined"}
                           />
                         </Stack>
+
+                        {/* Lista de nomes dos locais */}
+                        {route.locations && route.locations.length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <ul style={{ paddingLeft: 18, margin: 0 }}>
+                              {route.locations.map(local => (
+                                <li key={local.id} style={{ fontSize: '0.95em', color: '#333' }}>{local.name}</li>
+                              ))}
+                            </ul>
+                          </Box>
+                        )}
 
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                           <Typography variant="caption" color="text.secondary">
