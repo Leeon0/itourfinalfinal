@@ -24,7 +24,7 @@ import { useRoutes } from '../context/RoutesContext';
 import { useAuth } from '../context/AuthContext';
 
 const MyRoutesList = ({ onClose, onCreateRoute }) => {
-  const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading } = useRoutes();
+  const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading, fetchRoutes } = useRoutes();
   const { userProfile } = useAuth();
   const [showPanel, setShowPanel] = useState(true);
 

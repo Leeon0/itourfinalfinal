@@ -1,8 +1,8 @@
 // server.js
-// Import required modules
-const express = require('express'); // Express framework for handling HTTP requests
-const mysql = require('mysql2'); // MySQL2 client for Node.js
-const cors = require('cors'); // For web security
+// Importação dos módulos necessários
+const express = require('express'); // Framework Express para gerir pedidos HTTP
+const mysql = require('mysql2'); // Cliente MySQL2 para Node.js
+const cors = require('cors'); // Para segurança web
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Create an instance of express
+// Instancia da aplicação Express
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -24,7 +24,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Create a connection to the MySQL database
+// Conexão à base de dados MySQL
 const db = mysql.createConnection({
     host: "localhost", // Database host
     user: "itadmin",      // Database username
@@ -32,16 +32,16 @@ const db = mysql.createConnection({
     database: "iroutedb" // Name of the database
 });
 
-// Serves files from the uploads folder
+// Servir ficheiros da pasta de uploads
 app.use('/uploads', express.static('uploads'));
 
 
-// Define a route for the root URL '/'
+// Rota principal para teste do backend
 app.get('/', (req, res) => {
     return res.json("From backend side");
 });
 
-// Test backend connection
+// Rota para listar todos os utilizadores
 app.get('/users', (req, res) => {
     const sql = "select * from users"; 
     db.query(sql, (err, data) => {     
@@ -49,7 +49,7 @@ app.get('/users', (req, res) => {
         return res.json(data);         
     })
 });
-// Endpoint para devolver el usuario autenticado (dummy, sin sesión)
+// Endpoint para devolver o utilizador autenticado (dummy, sem sessão)
 app.get('/user', (req, res) => {
     // Si tuvieras sesión, aquí la usarías para identificar el usuario
     // Por ahora, simplemente devuelve null o un objeto vacío
@@ -57,19 +57,17 @@ app.get('/user', (req, res) => {
 });
 
 
-// Start the server and listen on port 8000
+// Iniciar o servidor na porta 8000
 app.listen(8000, () => {
     console.log("listening");
 });
 
-/********************************/
-/**                            **/
-/**       User Endpoints       **/
-/**                            **/
-/********************************/
+// ==============================
+// Endpoints de Utilizador
+// ==============================
 
 
-// User Login
+// Login de utilizador
 app.post('/login', (req, res) => {
     let email = req.body.email;
     let password = req.body.password;
@@ -117,7 +115,7 @@ app.post('/login', (req, res) => {
     }; 
 });
 
-// User Register
+// Registo de utilizador
 app.post('/register', upload.single('profileImage'), async (req, res) => {
   let name = req.body.fullName;
   let email = req.body.email;
@@ -202,13 +200,13 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
     }
 });
 
-// User Logout
+// Logout de utilizador
 app.post('/logout', async (req, res) => {
     res.clearCookie();
     res.status(200).json({ message: 'Logout Successful' })
 });
 
-// Update User Profile
+// Atualizar perfil do utilizador
 app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
   console.log('o que recebi do frontend:', req.body)
   let id = req.body.id;
@@ -274,17 +272,15 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
 }) 
 
 
-/********************************/
-/**                            **/
-/**       Tour Endpoints       **/
-/**                            **/
-/********************************/
+// ==============================
+// Endpoints de Rotas/Tours
+// ==============================
 
-// Fetch All Tours
+// Listar todas as rotas/tours
 
-// Fetch All Routes ()
+// Listar todas as rotas (alternativo)
 
-// Endpoint para obtener los lugares de una ruta
+// Endpoint para obter os lugares de uma rota
 app.get('/routes/:routeId/places', async (req, res) => {
   const { routeId } = req.params;
   try {
@@ -308,12 +304,35 @@ app.get('/routes/:routeId/places', async (req, res) => {
 
 
 app.get('/routes', (req, res) => {
-    db.query('SELECT * FROM tours', (error, results) => {
+    db.query('SELECT * FROM tours', async (error, results) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
-        // Formatear la fecha created_at a formato legible (ej: DD/MM/YYYY HH:mm)
-        const formattedResults = results.map(route => {
+        // Para cada ruta, buscar los lugares (paradas) y devolverlos en locations
+        const formattedResults = await Promise.all(results.map(async (route) => {
+            // Buscar lugares (paradas) de la ruta
+            let locationsArr = [];
+            try {
+                const [places] = await db.promise().query(
+                    `SELECT p.id, p.name, p.latitude, p.longitude, p.category, v.order
+                     FROM visits v
+                     JOIN places p ON v.place_id = p.id
+                     WHERE v.tour_id = ?
+                     ORDER BY v.order ASC`,
+                    [route.id]
+                );
+                locationsArr = places.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    latitude: p.latitude,
+                    longitude: p.longitude,
+                    category: p.category,
+                    order: p.order
+                }));
+            } catch (err) {
+                locationsArr = [];
+            }
+            // Formatear la fecha created_at a formato legible (ej: DD/MM/YYYY HH:mm)
             let formattedDate = '';
             if (route.created_at) {
                 const dateObj = new Date(route.created_at);
@@ -324,21 +343,12 @@ app.get('/routes', (req, res) => {
                 const minutes = String(dateObj.getMinutes()).padStart(2, '0');
                 formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
             }
-            let locationsArr = [];
-            if (route.locations) {
-                try {
-                    locationsArr = JSON.parse(route.locations);
-                    if (!Array.isArray(locationsArr)) locationsArr = [];
-                } catch (e) {
-                    locationsArr = [];
-                }
-            }
             return {
                 ...route,
                 created_at_formatted: formattedDate,
                 locations: locationsArr
             };
-        });
+        }));
         res.status(200).json(formattedResults);
     });
 });
@@ -351,50 +361,110 @@ app.get('/tours', (req, res) => {
     });
 });
 
-// server.js (CONTINUAÇÃO COM ROTAS POST, PUT, DELETE PARA ROUTES)
+// Continuação: Endpoints POST, PUT, DELETE para rotas
 
 // Criar nova rota
-app.post('/routes', async (req, res) => {
-  const {
-    name,
-    description,
-    duration,
-    locations,
-    createdBy,
-    createdByName,
-    isPublic,
-    routeImageBase64
-  } = req.body;
+app.post('/routes', upload.single('routeImage'), async (req, res) => {
+  const name = req.body.name;
+  const description = req.body.description;
+  const duration = req.body.duration;
+  const locations = req.body.locations ? JSON.parse(req.body.locations) : [];
+  const createdBy = req.body.createdBy;
+  const createdByName = req.body.createdByName;
+  const isPublic = req.body.isPublic ?? true;
+  const createdAt = new Date();
+  let route_image = null;
+  if (req.file) {
+    route_image = `uploads/${req.file.filename}`;
+  } else if (req.body.routeImageBase64) {
+    route_image = req.body.routeImageBase64;
+  }
 
   try {
-    const createdAt = new Date();
-
     const [result] = await db.promise().query(
-      `INSERT INTO tours (name, description, duration, locations, created_by, created_by_name, is_public, route_image, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tours (name, description, duration, created_by, created_by_name, is_public, route_image, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         name,
         description,
         duration,
-        JSON.stringify(locations),
         createdBy,
         createdByName,
-        isPublic ?? true,
-        routeImageBase64 ?? null,
+        isPublic,
+        route_image,
         createdAt
       ]
     );
 
     const insertedId = result.insertId;
-
+// Inserir visitas para cada local (parada) para associar à rota
+    for (let i = 0; i < locations.length; i++) {
+      const loc = locations[i];
+// Procurar se já existe um lugar com o mesmo nome
+      let placeId;
+      const [foundPlace] = await db.promise().query(
+        'SELECT id FROM places WHERE name = ?',
+        [loc.name]
+      );
+      if (foundPlace.length > 0) {
+// Se existe, usar esse id
+        placeId = foundPlace[0].id;
+      } else {
+// Se não existe, criar novo lugar
+        const categoryValue = loc.category != null && loc.category !== '' ? loc.category : 'other';
+        const [insertPlace] = await db.promise().query(
+          'INSERT INTO places (name, latitude, longitude, category) VALUES (?, ?, ?, ?)',
+          [loc.name || '', loc.latitude || null, loc.longitude || null, categoryValue]
+        );
+        placeId = insertPlace.insertId;
+      }
+// Inserir visita
+      await db.promise().query(
+        'INSERT INTO visits (tour_id, place_id, `order`) VALUES (?, ?, ?)',
+        [insertedId, placeId, i + 1]
+      );
+    }
     const [newRoute] = await db.promise().query(
       `SELECT * FROM tours WHERE id = ?`,
       [insertedId]
     );
-
     let formattedRoute = newRoute[0];
-    formattedRoute.locations = JSON.parse(formattedRoute.locations || '[]');
-
+// Buscar locais (places) associados à rota nas tabelas visits/places
+    let locationsArr = [];
+    try {
+      const [places] = await db.promise().query(
+        `SELECT p.id, p.name, p.latitude, p.longitude, p.category, v.order
+         FROM visits v
+         JOIN places p ON v.place_id = p.id
+         WHERE v.tour_id = ?
+         ORDER BY v.order ASC`,
+        [insertedId]
+      );
+      locationsArr = places.map(p => ({
+        id: p.id,
+        name: p.name,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        category: p.category,
+        order: p.order
+      }));
+    } catch (err) {
+      locationsArr = [];
+    }
+    formattedRoute.locations = locationsArr;
+// Formatar data de criação
+    let formattedDate = '';
+    if (formattedRoute.created_at) {
+      const dateObj = new Date(formattedRoute.created_at);
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+    formattedRoute.created_at_formatted = formattedDate;
+    formattedRoute.createdAt = formattedRoute.created_at;
     res.status(201).json(formattedRoute);
   } catch (error) {
     console.error('Erro ao criar rota:', error);
@@ -463,13 +533,11 @@ app.delete('/routes/:id', async (req, res) => {
 
 
 
-/*********************************/
-/**                             **/
-/**       Guide Endpoints       **/
-/**                             **/
-/*********************************/
+// ==============================
+// Endpoints de Guias
+// ==============================
 
-// Fetch All Guides
+// Listar todos os guias
 app.get('/guides', (req, res) => {
     db.query(
         `WITH ratings AS 
@@ -514,7 +582,7 @@ app.get('/guides', (req, res) => {
     });
 });
 
-// Fetch the Tours of a specific Guide
+// Buscar as rotas de um guia específico
 app.get('/routes/guide/:guideID', (req, res) => {
     const guideID = req.params["guideID"];
     console.log('Guide ID:', guideID);
@@ -566,11 +634,9 @@ app.get('/routes/guide/:guideID', (req, res) => {
 
 
 
-/**********************************/
-/**                              **/
-/**     Reservation Endpoints    **/
-/**                              **/
-/**********************************/
+// ==============================
+// Endpoints de Reservas
+// ==============================
 
 // Criar nova reserva
 app.post('/reservations', async (req, res) => {
@@ -727,7 +793,7 @@ app.post('/ratings', async (req, res) => {
   }
 });
 
-// Função interna: atualizar média do guia
+// Função interna para atualizar a média do guia
 async function updateGuideAverageRating(guideId) {
   try {
     const [ratings] = await db.promise().query(
@@ -775,7 +841,7 @@ app.get('/guide/:guideId/rating', async (req, res) => {
   }
 });
 
-// 📌 Obter todas as reservas para gestão por parte dos guias
+// Obter todas as reservas para gestão por parte dos guias
 app.get('/reservations', async (req, res) => {
   try {
     const [rows] = await db.promise().query('SELECT * FROM reservations ORDER BY created_at DESC');
@@ -795,7 +861,7 @@ app.get('/reservations', async (req, res) => {
   }
 });
 
-// 📌 Cancelar reserva manualmente (ex: por parte do guia)
+// Cancelar reserva manualmente (ex: por parte do guia)
 app.put('/reservations/:id/cancel', async (req, res) => {
   const { id } = req.params;
   const cancelledAt = new Date();
@@ -813,12 +879,9 @@ app.put('/reservations/:id/cancel', async (req, res) => {
   }
 });
 
-/**********************************************/
-/**                                          **/
-/**         Endpoint para listar guias       **/
-/**       com rotas, ratings e veículo       **/
-/**                                          **/
-/**********************************************/
+// ==============================
+// Endpoint para listar guias com rotas, ratings e veículo
+// ==============================
 app.get('/guides', async (req, res) => {
   try {
     // 🔹 Consulta para buscar todos os utilizadores do tipo 'guia'

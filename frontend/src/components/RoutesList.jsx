@@ -33,7 +33,7 @@ import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationsContext';
 
 const RoutesList = ({ onClose, onCreateRoute }) => {
-  const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading } = useRoutes();
+  const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading, fetchRoutes } = useRoutes();
   const { isGuide, userProfile } = useAuth();
   const { addReservation, reservations } = useReservations();
 
