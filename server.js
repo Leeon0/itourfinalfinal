@@ -346,6 +346,7 @@ app.get('/routes', (req, res) => {
             return {
                 ...route,
                 created_at_formatted: formattedDate,
+                createdAt: route.created_at,
                 locations: locationsArr
             };
         }));
@@ -518,6 +519,22 @@ app.delete('/routes/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Eliminar visitas associadas à rota
+    await db.promise().query(
+      `DELETE FROM visits WHERE tour_id = ?`,
+      [id]
+    );
+    // Eliminar trabalhos (works) associados à rota
+    await db.promise().query(
+      `DELETE FROM works WHERE tour_id = ?`,
+      [id]
+    );
+    // Eliminar reservas associadas à rota
+    await db.promise().query(
+      `DELETE FROM reservations WHERE tour_id = ?`,
+      [id]
+    );
+    // Finalmente, eliminar a rota
     await db.promise().query(
       `DELETE FROM tours WHERE id = ?`,
       [id]

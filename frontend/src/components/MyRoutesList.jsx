@@ -259,7 +259,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
       {/* Created Date + Delete */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.80rem' }}>
-          Created on {route.createdAt ? new Date(route.createdAt).toLocaleDateString('en-GB') : 'Date not available'}
+          Created on {route.created_at_formatted ? route.created_at_formatted : (route.createdAt ? new Date(route.createdAt).toLocaleDateString('en-GB') : 'Date not available')}
         </Typography>
         <IconButton
           onClick={(e) => handleDeleteRoute(e, route.id)}
