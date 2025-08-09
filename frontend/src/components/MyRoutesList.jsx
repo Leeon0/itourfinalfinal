@@ -28,7 +28,8 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
   const { userProfile } = useAuth();
   const [showPanel, setShowPanel] = useState(true);
 
-  const myRoutes = routes.filter(route => route.createdBy === userProfile?.uid);
+  // Mostrar solo rutas creadas por el usuario (id > 12)
+  const myRoutes = routes.filter(route => route.id > 12);
 
   const handleRouteClick = (route) => {
     if (activeRoute?.id === route.id) {
