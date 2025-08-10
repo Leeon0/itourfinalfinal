@@ -53,8 +53,9 @@ export const ReservationsProvider = ({ children }) => {
 
     try {
       const payload = {
+        guideId: route.guide_id,
+        tourId: route.id,
         userId: user.id,
-        routeId: route.id,
         selectedDate,
         selectedHours,
       };
@@ -96,9 +97,8 @@ export const ReservationsProvider = ({ children }) => {
     }
 
     try {
-      await axios.post(`http://localhost:8000/ratings`, {
+      await axios.put(`http://localhost:8000/ratings`, {
         reservationId,
-        touristId: user.id,
         rating
       });
 
@@ -106,17 +106,6 @@ export const ReservationsProvider = ({ children }) => {
     } catch (error) {
       console.error('Erro ao submeter avaliação:', error);
       throw error;
-    }
-  };
-
-  // Buscar média de avaliações de um guia específico
-  const getGuideRating = async (guideId) => {
-    try {
-      const res = await axios.get(`http://localhost:8000/guides/${guideId}/rating`);
-      return res.data;
-    } catch (error) {
-      console.error('Erro ao buscar rating do guia:', error);
-      return { averageRating: 0, totalRatings: 0 };
     }
   };
 
@@ -137,7 +126,6 @@ export const ReservationsProvider = ({ children }) => {
     cancelReservation,
     deleteReservation,
     submitRating,
-    getGuideRating
   };
 
   return (
