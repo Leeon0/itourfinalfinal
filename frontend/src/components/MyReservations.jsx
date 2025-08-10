@@ -39,13 +39,20 @@ const MyReservations = ({ onClose }) => {
   const [ratingDialog, setRatingDialog] = useState({ open: false, reservation: null });
   const [ratingValue, setRatingValue] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [actioningIds, setActioningIds] = useState(new Set());
   const [errorMessage, setErrorMessage] = useState('');
-
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null, reservationId: null, routeName: '' });
+  
   // Filter reservations to show only confirmed or cancelled
-  const filteredReservations = reservations.filter(reservation => 
-    reservation.status === 'confirmed' || reservation.status === 'cancelled'
-  );
-
+  let filteredReservations = [];
+  if (reservations) {
+    console.log(reservations)
+    filteredReservations = reservations.results.filter(reservation => 
+      reservation.status === 'confirmed' || reservation.status === 'cancelled'
+    );
+    console.log(filteredReservations)
+  }
+  
   // Handle guide access restriction
   if (isGuide()) {
     return (
@@ -91,6 +98,40 @@ const MyReservations = ({ onClose }) => {
     }
   };
 
+  const handleConfirmAction = async () => {
+    const { action, reservationId } = confirmDialog;
+    if (action === 'cancel') {
+      setActioningIds(prev => new Set([...prev, reservationId]));
+      try {
+        await cancelReservation(reservationId);
+        setSuccessMessage('Reservation cancelled successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (error) {
+        setErrorMessage(`Error cancelling reservation: ${error.message}`);
+        setTimeout(() => setErrorMessage(''), 3000);
+      } finally {
+        setActioningIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(reservationId);
+          return newSet;
+        });
+      }
+    }
+    handleCloseConfirmDialog();
+  };
+
+  const handleOpenConfirmDialog = (action, reservationId, routeName = '') => {
+    setConfirmDialog({ open: true, action, reservationId, routeName });
+  };
+
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ open: false, action: null, reservationId: null, routeName: '' });
+  };
+
+  const handleCancelReservation = (reservationId) => {
+    handleOpenConfirmDialog('cancel', reservationId);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'confirmed': return 'success';
@@ -110,20 +151,19 @@ const MyReservations = ({ onClose }) => {
   };
 
   const formatTimeSlot = (selectedHours, totalHours) => {
-    if (!selectedHours || selectedHours.length === 0) return 'Time not specified';
-    const startTime = selectedHours[0];
-    return `${startTime} (${totalHours}h)`;
+    if (!selectedHours) return 'Time not specified';
+    return `${selectedHours} (${totalHours}h)`;
   };
 
   // Format date in WEST (Europe/Lisbon) time zone
-  const formatDate = (dateString) => {
+  /*const formatDate = (dateString) => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-GB', { timeZone: 'Europe/Lisbon' });
-  };
+  };*/
 
   // Format createdAt date
-  const formatCreatedAt = (createdAt) => {
+  const formatDate = (createdAt) => {
     if (!createdAt) return 'Date not available';
     const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
     return date.toLocaleDateString('en-GB', { timeZone: 'Europe/Lisbon' });
@@ -259,7 +299,7 @@ const MyReservations = ({ onClose }) => {
                         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
                           {reservation.routeImage ? (
                             <Avatar 
-                              src={reservation.routeImage} 
+                              src= {`http://localhost:8000/${reservation.routeImage}`}
                               sx={{ 
                                 width: 300, 
                                 height: 150, 
@@ -287,7 +327,7 @@ const MyReservations = ({ onClose }) => {
                         {/* Guide and Date (Left), Duration (Right) */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                           <Box>
-                            {reservation.routeCreatedByName && (
+                            {reservation.guideName && (
                               <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
                                 <PersonIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                                 <Typography 
@@ -295,7 +335,7 @@ const MyReservations = ({ onClose }) => {
                                   color="text.secondary"
                                   sx={{ fontSize: '0.85rem' }}
                                 >
-                                  Guide: {reservation.routeCreatedByName}
+                                  Guide: {reservation.guideName}
                                 </Typography>
                               </Box>
                             )}
@@ -323,32 +363,62 @@ const MyReservations = ({ onClose }) => {
                         </Box>
 
                         {/* Status and Rating/Delete Buttons */}
-                        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2 , mb: 2}}>
+                        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 2 }}>
                           <Chip 
-                            label={getStatusLabel(reservation.status)} 
+                            label="Confirmed" 
                             size="small"
-                            color={getStatusColor(reservation.status)}
+                            color="success"
                             sx={{ fontWeight: 'medium' }}
                           />
-                          {reservation.status === 'confirmed' && !reservation.rated && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              sx={{
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            {!reservation.rating && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                sx={{
                                   borderRadius: '12px',
                                   textTransform: 'none',
                                   bgcolor: '#FFC107',
                                   color: '#333',
-                                  fontSize: '0.80rem', // Smaller font size
-                                  padding: '6px 8px',  // Smaller padding
-                                  minWidth: '80px',    // Smaller minimum width
-                                  '&:hover': { bgcolor: '#FFB300' }
+                                  fontSize: '0.80rem',
+                                  padding: '6px 8px',
+                                  minWidth: '80px',
+                                  '&:hover': { bgcolor: '#FFB300' },
+                                  '&:focus': {
+                                    borderColor: 'yellow',
+                                    boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
+                                  },
                                 }}
-                              onClick={() => setRatingDialog({ open: true, reservation })}
+                                onClick={() => setRatingDialog({ open: true, reservation })}
+                              >
+                                Rate Guide
+                              </Button>
+                            )}
+                            <Button
+                              variant="outlined"
+                              color="error"
+                              size="small"
+                              onClick={() => handleCancelReservation(reservation.id)}
+                              disabled={actioningIds.has(reservation.id)}
+                              startIcon={actioningIds.has(reservation.id) ? 
+                                <CircularProgress size={14} color="inherit" /> : 
+                                <CancelIcon sx={{ fontSize: '14px' }} />
+                              }
+                              sx={{ 
+                                textTransform: 'none', 
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                padding: '4px 8px',
+                                minWidth: '70px',
+                                '&:focus': {
+                                  borderColor: 'yellow',
+                                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
+                                },
+                              }}
                             >
-                              Rate Guide
+                              Cancel
                             </Button>
-                          )}
+                          </Box>
                         </Box>
 
                         {/* Booked On */}
@@ -363,7 +433,7 @@ const MyReservations = ({ onClose }) => {
                             bottom:0
                           }}
                         >
-                          Booked on {formatCreatedAt(reservation.createdAt)}
+                          Booked on {formatDate(reservation.createdAt)}
                         </Typography>
                       </CardContent>
                     </Card>
@@ -435,10 +505,10 @@ const MyReservations = ({ onClose }) => {
             }
           }}
         >
-          <DialogTitle sx={{ fontWeight: 'bold' }}>Rate Your Guide</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 'bold' }}>Rate Your Guide</DialogTitle>
           <DialogContent>
             <Typography variant="body1" gutterBottom>
-              How was your experience with {ratingDialog.reservation?.routeCreatedByName} for {ratingDialog.reservation?.routeName}?
+              How was your experience with {ratingDialog.reservation?.guideName} for {ratingDialog.reservation?.routeName}?
             </Typography>
             <Box display="flex" justifyContent="center" my={2}>
               <Rating
