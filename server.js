@@ -587,40 +587,30 @@ app.get('/routes/guide/:guideID', async (req, res) => {
 // Criar nova reserva
 app.post('/reservations', async (req, res) => {
   const {
+    guideId,
+    tourId,
     userId,
-    userName,
-    userEmail,
-    routeId,
-    routeName,
-    routeImage,
-    routeCreatedBy,
-    routeCreatedByName,
     selectedDate,
     selectedHours
   } = req.body;
-
-  const totalHours = selectedHours?.length ?? 0;
+  console.log('o que recebi', req.body)
+  
   const createdAt = new Date();
-
+  let selectedTime = new Date(selectedDate + ' ' + selectedHours[0]); 
+  console.log('horas',selectedTime)
   try {
     const [result] = await db.promise().query(
       `INSERT INTO reservations (
-        user_id, user_name, user_email, 
-        route_id, route_name, route_image, 
-        route_created_by, route_created_by_name, 
-        selected_date, selected_hours, total_hours, 
-        status, rated, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'confirmed', 0, ?)`,
+        tour_id, guide_id, user_id, 
+        selected_time, status, created_at
+      ) VALUES (?, ?, ?, ?, 'confirmed', ?)`,
       [
-        userId, userName, userEmail,
-        routeId, routeName, routeImage,
-        routeCreatedBy, routeCreatedByName,
-        selectedDate, JSON.stringify(selectedHours), totalHours,
-        createdAt
+        tourId, guideId, userId, 
+        selectedTime, createdAt
       ]
     );
 
-    return res.status(201).json({ message: 'Reserva criada com sucesso', reservationId: result.insertId });
+    return res.status(201).json({ message: 'Reserva criada com sucesso', result });
   } catch (error) {
     console.error('Erro ao criar reserva:', error);
     return res.status(500).json({ error: 'Erro ao criar reserva' });
@@ -633,14 +623,25 @@ app.get('/reservations/user/:userId', async (req, res) => {
 
   try {
     const [rows] = await db.promise().query(
-      `SELECT * FROM reservations WHERE user_id = ? ORDER BY created_at DESC`,
+      `SELECT 
+        r.id,
+        t.name AS routeName,
+        t.tour_image AS routeImage,
+        g.name AS guideName,
+        DATE(selected_time) AS selectedDate,
+        TIME(selected_time) AS selectedHours,
+        t.duration AS totalHours,
+        r.rating_guide AS rating,
+        r.created_at AS createdAt, 
+        r.status
+      FROM reservations r
+        JOIN tours t ON (r.tour_id = t.id)
+        JOIN users g ON (r.guide_id = g.id)
+      WHERE user_id = ? 
+      ORDER BY r.created_at DESC`,
       [userId]
     );
-
-    rows.forEach(reserva => {
-      reserva.selected_hours = JSON.parse(reserva.selected_hours || '[]');
-    });
-
+    
     return res.status(200).json({message: 'Reservations listed successfully', results: rows});
   } catch (error) {
     console.error('Erro ao buscar reservas do utilizador:', error);
@@ -655,7 +656,7 @@ app.put('/reservations/:id/cancel', async (req, res) => {
 
   try {
     await db.promise().query(
-      `UPDATE reservations SET status = 'cancelled', cancelled_at = ? WHERE id = ?`,
+      `UPDATE reservations SET status = 'cancelled', updated_at = ? WHERE id = ?`,
       [cancelledAt, id]
     );
 
@@ -680,15 +681,9 @@ app.delete('/reservations/:id', async (req, res) => {
 });
 
 // Submeter avaliação
-app.post('/ratings', async (req, res) => {
+app.put('/ratings', async (req, res) => {
   const {
     reservationId,
-    guideId,
-    guideName,
-    touristId,
-    touristName,
-    routeId,
-    routeName,
     rating
   } = req.body;
 
@@ -697,7 +692,7 @@ app.post('/ratings', async (req, res) => {
   try {
     // Verificar se a reserva já foi avaliada
     const [existing] = await db.promise().query(
-      `SELECT rated FROM reservations WHERE id = ?`,
+      `SELECT rating_guide FROM reservations WHERE id = ?`,
       [reservationId]
     );
 
@@ -709,81 +704,16 @@ app.post('/ratings', async (req, res) => {
       return res.status(400).json({ error: 'Reserva já avaliada' });
     }
 
-    // Inserir rating
-    await db.promise().query(
-      `INSERT INTO ratings (
-        reservation_id, guide_id, guide_name, 
-        tourist_id, tourist_name, 
-        route_id, route_name, rating, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        reservationId, guideId, guideName,
-        touristId, touristName,
-        routeId, routeName, rating, createdAt
-      ]
-    );
-
     // Atualizar reserva como avaliada
     await db.promise().query(
-      `UPDATE reservations SET rated = 1, rating_submitted_at = ? WHERE id = ?`,
-      [createdAt, reservationId]
+      `UPDATE reservations SET rating_guide = ?*10 WHERE id = ?`,
+      [rating, reservationId]
     );
-
-    // Recalcular média
-    await updateGuideAverageRating(guideId);
 
     return res.status(200).json({ message: 'Rating submetido com sucesso' });
   } catch (error) {
     console.error('Erro ao submeter rating:', error);
     return res.status(500).json({ error: 'Erro ao submeter rating' });
-  }
-});
-
-// Função interna: atualizar média do guia
-async function updateGuideAverageRating(guideId) {
-  try {
-    const [ratings] = await db.promise().query(
-      `SELECT rating FROM ratings WHERE guide_id = ?`,
-      [guideId]
-    );
-
-    const totalRatings = ratings.length;
-    const averageRating = totalRatings > 0
-      ? ratings.reduce((sum, r) => sum + r.rating, 0) / totalRatings
-      : 0;
-
-    await db.promise().query(
-      `UPDATE users SET average_rating = ?, total_ratings = ?, last_rating_update = ? WHERE id = ?`,
-      [averageRating, totalRatings, new Date(), guideId]
-    );
-  } catch (error) {
-    console.error('Erro ao atualizar média do guia:', error);
-  }
-}
-
-// Buscar rating médio do guia
-app.get('/guide/:guideId/rating', async (req, res) => {
-  const { guideId } = req.params;
-
-  try {
-    const [rows] = await db.promise().query(
-      `SELECT average_rating, total_ratings FROM users WHERE id = ?`,
-      [guideId]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Guia não encontrado' });
-    }
-
-    const ratingData = {
-      averageRating: rows[0].average_rating || 0,
-      totalRatings: rows[0].total_ratings || 0
-    };
-
-    return res.status(200).json(ratingData);
-  } catch (error) {
-    console.error('Erro ao buscar média do guia:', error);
-    return res.status(500).json({ error: 'Erro ao buscar média do guia' });
   }
 });
 
@@ -870,3 +800,4 @@ app.get('/guides', async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
 });
+
