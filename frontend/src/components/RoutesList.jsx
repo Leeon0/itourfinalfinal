@@ -32,7 +32,7 @@ import { useRoutes } from '../context/RoutesContext';
 import { useAuth } from '../context/AuthContext';
 import { useReservations } from '../context/ReservationsContext';
 
-const RoutesList = ({ onClose, onCreateRoute }) => {
+const RoutesList = ({ onClose, onCreateRoute, onReserve }) => {
   const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading } = useRoutes();
   const { isGuide, userProfile } = useAuth();
   const { addReservation, reservations } = useReservations();
