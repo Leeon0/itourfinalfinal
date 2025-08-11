@@ -9,9 +9,11 @@ import { SidePanel, PointsList, PointItem, RemoveButton } from '../styles/Styled
 import LocationSearch from './LocationSearch';
 import ImageUpload from './ImageUpload';
 import { useAuth } from '../context/AuthContext';
+import { useRoutes } from '../context/RoutesContext';
 
 const RouteForm = ({ onClose }) => {
   const { isGuide, loading, user } = useAuth();
+  const { fetchRoutes } = useRoutes();
 
   const [routeName, setRouteName] = useState("");
   const [routeDescription, setRouteDescription] = useState("");
@@ -61,20 +63,41 @@ const RouteForm = ({ onClose }) => {
 
     setFormLoading(true);
     try {
+  // Transformar baseLocation e locations para formato normalizado
+      const normalizedBaseLocation = baseLocation
+        ? {
+            id: baseLocation.id,
+            name: baseLocation.name,
+            latitude: baseLocation.position[0],
+            longitude: baseLocation.position[1],
+            category: baseLocation.category || null
+          }
+        : null;
+
+      const normalizedLocations = locations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        latitude: loc.position[0],
+        longitude: loc.position[1],
+        category: loc.category || null
+      }));
+
       const formData = new FormData();
       formData.append('name', routeName.trim());
       formData.append('description', routeDescription.trim());
-      formData.append('baseLocation', JSON.stringify(baseLocation));
-      formData.append('duration', `${duration}h`);
-      formData.append('locations', JSON.stringify(locations));
-      formData.append('color', `#${Math.floor(Math.random() * 16777215).toString(16)}`);
-      formData.append('guideId', user.id);
-      if (routeImage) formData.append('routeImage', routeImage);
+      formData.append('baseLocation', JSON.stringify(normalizedBaseLocation));
+      formData.append('duration', duration);
+      formData.append('locations', JSON.stringify(normalizedLocations));
+      //formData.append('color', `#${Math.floor(Math.random() * 16777215).toString(16)}`);
+      formData.append('createdBy', user.id);
+
+      if (routeImage) { formData.append('routeImage', routeImage) };
 
       await axios.post('http://localhost:8000/routes', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
+      await fetchRoutes();
       onClose();
     } catch (err) {
       console.error(err);
