@@ -593,11 +593,10 @@ app.post('/reservations', async (req, res) => {
     selectedDate,
     selectedHours
   } = req.body;
-  console.log('o que recebi', req.body)
   
   const createdAt = new Date();
   let selectedTime = new Date(selectedDate + ' ' + selectedHours[0]); 
-  console.log('horas',selectedTime)
+
   try {
     const [result] = await db.promise().query(
       `INSERT INTO reservations (
@@ -687,8 +686,6 @@ app.put('/ratings', async (req, res) => {
     rating
   } = req.body;
 
-  const createdAt = new Date();
-
   try {
     // Verificar se a reserva já foi avaliada
     const [existing] = await db.promise().query(
@@ -720,7 +717,28 @@ app.put('/ratings', async (req, res) => {
 // 📌 Obter todas as reservas para gestão por parte dos guias
 app.get('/reservations', async (req, res) => {
   try {
-    const [rows] = await db.promise().query('SELECT * FROM reservations ORDER BY created_at DESC');
+    const [rows] = await db.promise().query(
+      `SELECT 
+        r.id,
+        r.tour_id AS routeId, 
+        t.name AS routeName,
+        t.tour_image AS routeImage,
+        r.guide_id AS guideId,
+        g.name AS guideName,
+        r.user_id AS userId,
+        u.name AS userName,
+        DATE(selected_time) AS selectedDate,
+        TIME(selected_time) AS selectedHours,
+        t.duration AS totalHours,
+        r.rating_guide AS rating,
+        r.created_at AS createdAt, 
+        r.status
+      FROM reservations r
+        JOIN tours t ON (r.tour_id = t.id)
+        JOIN users g ON (r.guide_id = g.id)
+        JOIN users u ON (r.user_id = u.id)
+      ORDER BY r.created_at DESC`
+    );
 
     // Transformar os campos JSON em arrays legíveis
     const formattedReservations = rows.map(reserva => {
@@ -800,4 +818,5 @@ app.get('/guides', async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
 });
+
 
