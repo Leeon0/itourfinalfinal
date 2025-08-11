@@ -586,7 +586,7 @@ app.get('/routes/guide/:guideID', async (req, res) => {
 
 // Criar nova reserva
 app.post('/reservations', async (req, res) => {
-  const {
+  var {
     guideId,
     tourId,
     userId,
@@ -598,6 +598,15 @@ app.post('/reservations', async (req, res) => {
   let selectedTime = new Date(selectedDate + ' ' + selectedHours[0]); 
 
   try {
+    // Caso guia não esteja definido (criou a reserva a partir das Available Routes)
+    if(!guideId) {
+      const [guideCreated] = await db.promise().query(
+        `SELECT created_by FROM tours WHERE id = ?;`,
+        [tourId]
+      )
+      console.log(guideCreated)
+      guideId = guideCreated[0]['created_by']
+    }
     const [result] = await db.promise().query(
       `INSERT INTO reservations (
         tour_id, guide_id, user_id, 
@@ -818,5 +827,6 @@ app.get('/guides', async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
 });
+
 
 
