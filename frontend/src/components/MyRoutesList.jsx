@@ -25,10 +25,10 @@ import { useAuth } from '../context/AuthContext';
 
 const MyRoutesList = ({ onClose, onCreateRoute }) => {
   const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading } = useRoutes();
-  const { userProfile } = useAuth();
+  const { user, userProfile } = useAuth();
   const [showPanel, setShowPanel] = useState(true);
 
-  const myRoutes = routes.filter(route => route.createdBy === userProfile?.uid);
+  const myRoutes = routes.filter(route => route.createdBy === user?.id);
 
   const handleRouteClick = (route) => {
     if (activeRoute?.id === route.id) {
