@@ -32,7 +32,7 @@ import { useReservations } from '../context/ReservationsContext';
 import { useAuth } from '../context/AuthContext';
 
 const MyReservations = ({ onClose }) => {
-  const { reservations, loading, deleteReservation, submitRating } = useReservations();
+  const { reservations, loading, cancelReservation, deleteReservation, submitRating } = useReservations();
   const { isGuide } = useAuth();
   const [showPanel, setShowPanel] = useState(true);
   const [deletingIds, setDeletingIds] = useState(new Set());
@@ -192,7 +192,15 @@ const MyReservations = ({ onClose }) => {
   return (
     <Slide in={showPanel} direction="down" timeout={700} mountOnEnter unmountOnExit onExited={onClose}>
       <SidePanel elevation={2} sx={{ height: '90vh', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 4 }}>
-        <Box sx={{ flex: 1, overflow: 'auto', paddingBottom: '60px' }}>
+        <Box sx={{
+          flex: 1,
+          overflow: 'auto',
+          paddingBottom: '60px',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none', 
+          },
+        }}>
           <Typography variant="h5" textAlign="center" sx={{ my: 3 }}>
             My Reservations
           </Typography>
@@ -365,9 +373,9 @@ const MyReservations = ({ onClose }) => {
                         {/* Status and Rating/Delete Buttons */}
                         <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 2 }}>
                           <Chip 
-                            label="Confirmed" 
+                            label= {getStatusLabel(reservation.status)}
                             size="small"
-                            color="success"
+                            color= {getStatusColor(reservation.status)}
                             sx={{ fontWeight: 'medium' }}
                           />
                           <Box sx={{ display: 'flex', gap: 1 }}>
@@ -521,16 +529,70 @@ const MyReservations = ({ onClose }) => {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleRatingClose} color="error">
-              Cancel
-            </Button>
             <Button
               onClick={handleRatingSubmit}
               variant="contained"
-              sx={{ backgroundColor: '#FFC107', color: '#333' }}
+              sx={{ 
+                backgroundColor: '#FFC107', 
+                color: '#333',
+                '&:focus': {
+                  borderColor: 'yellow',
+                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
+                },
+              }}
               disabled={!ratingValue}
             >
               Submit
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Dialog
+          open={confirmDialog.open}
+          onClose={handleCloseConfirmDialog}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              background: '#FFF8E1',
+              color: '#333',
+              borderRadius: 2,
+              border: '2px solid #FFC107',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            }
+          }}
+        >
+          <DialogTitle sx={{ fontWeight: 'bold' }}>
+            Cancel Reservation
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1">
+              Are you sure you want to cancel this reservation?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseConfirmDialog} color="error">
+              Back
+            </Button>
+            <Button
+              onClick={handleConfirmAction}
+              variant="outlined"
+              sx={{
+                borderRadius: '12px',
+                textTransform: 'none',
+                bgcolor: '#FFC107',
+                color: '#333',
+                fontSize: '0.80rem',
+                padding: '6px 8px',
+                minWidth: '80px',
+                '&:hover': { bgcolor: '#FFB300' },
+                '&:focus': {
+                  borderColor: 'yellow',
+                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
+                },
+              }}
+            >
+              Confirm
             </Button>
           </DialogActions>
         </Dialog>
@@ -538,5 +600,6 @@ const MyReservations = ({ onClose }) => {
     </Slide>
   );
 };
+
 
 export default MyReservations;
