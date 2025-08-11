@@ -27,8 +27,8 @@ app.use(cors({
 // Create a connection to the MySQL database
 const db = mysql.createConnection({
     host: "localhost", // Database host
-    user: "danialves",      // Database username
-    password: "AcinAcademy2025", // Database password
+    user: "root",      // Database username
+    password: "", // Database password
     database: "itourdb" // Name of the database
 });
 
@@ -195,7 +195,7 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
             ...userRow[0],
             ...(carRow[0] ? carRow[0] : {})
         };
-        console.log('o que mandei',userWithCar)
+        
         res.status(200).json({ message: 'User registered successfully', userWithCar });
     } catch (error) {
         console.error('Registration error:', error);
@@ -308,12 +308,25 @@ app.get('/routes/:routeId/places', async (req, res) => {
 
 // Fetch All Routes 
 app.get('/routes', (req, res) => {
-    db.query('SELECT * FROM tours', (error, results) => {
+    db.query(
+      `SELECT 
+        t.id,
+        t.name, 
+        t.tour_image,
+        t.duration,
+        t.created_at,
+        t.description,
+        t.created_by AS createdBy,
+        g.name AS createdByName,
+        g.profile_image AS createdByProfileImage
+      FROM tours t 
+        JOIN users g ON (t.created_by = g.id)`, 
+      (error, results) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
 
-        // Formatear la fecha created_at a formato legible (ej: DD/MM/YYYY HH:mm)
+        // Formatar a data created_at (ex: DD/MM/YYYY HH:mm)
         const formattedResults = results.map(route => {
             let formattedDate = '';
             if (route.created_at) {
@@ -340,43 +353,86 @@ app.get('/routes', (req, res) => {
                 locations: locationsArr
             };
         });
+        console.log(formattedResults)
         res.status(200).json(formattedResults);
     });
 });
 
 // Criar nova rota
-app.post('/routes', async (req, res) => {
-  const {
-    name,
-    description,
-    duration,
-    locations,
-    createdBy,
-    createdByName,
-    isPublic,
-    routeImageBase64
-  } = req.body;
+app.post('/routes', upload.single('routeImage'), async (req, res) => {
+  const name = req.body.name;
+  const description = req.body.description;
+
+  // Adaptar string para objeto Date
+  /*const h = req.body.duration[0];
+  const ms = new Date().setHours(h);
+  const duration = new Date(ms)*/
+  const duration = req.body.duration;
+  const locations = req.body.locations ? JSON.parse(req.body.locations) : [];
+  const createdBy = req.body.createdBy;
+  const createdAt = new Date();
+
+  if (req.file) {
+    route_image = `uploads/${req.file.filename}`;
+  } else if (req.body.routeImageBase64) {
+    route_image = req.body.routeImageBase64;
+  }
 
   try {
-    const createdAt = new Date();
-
     const [result] = await db.promise().query(
-      `INSERT INTO tours (name, description, duration, locations, created_by, created_by_name, is_public, route_image, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO tours 
+      (name, duration, created_at, tour_image, created_by, description)
+       VALUES (?, ?, ?, ?, ?, ?);`,
       [
         name,
-        description,
         duration,
-        JSON.stringify(locations),
+        createdAt,
+        route_image,
         createdBy,
-        createdByName,
-        isPublic ?? true,
-        routeImageBase64 ?? null,
-        createdAt
+        description,
       ]
     );
 
     const insertedId = result.insertId;
+
+    console.log('Inserindo em works:', { createdBy, insertedId });
+
+    // Associar a rota ao guia na tabela works
+    await db.promise().query(
+      'INSERT INTO works (guide_id, tour_id) VALUES (?, ?)',
+      [createdBy, insertedId]
+    );
+
+    // Inserir visitas para cada local (paragem) para associar à rota
+    for (let i = 0; i < locations.length; i++) {
+      const loc = locations[i];
+      
+      // Procurar se já existe um lugar com o mesmo nome
+      let placeId;
+      const [foundPlace] = await db.promise().query(
+        'SELECT id FROM places WHERE name = ?',
+        [loc.name]
+      );
+
+      if (foundPlace.length > 0) {
+        // Se existir, usar esse id
+        placeId = foundPlace[0].id;
+      } else {
+        // Se não existir, criar novo lugar
+        const categoryValue = loc.category != null && loc.category !== '' ? loc.category : 'other';
+        const [insertPlace] = await db.promise().query(
+          'INSERT INTO places (name, latitude, longitude, category) VALUES (?, ?, ?, ?)',
+          [loc.name || '', loc.latitude || null, loc.longitude || null, categoryValue]
+        );
+        placeId = insertPlace.insertId;
+      }
+
+      // Inserir visita
+      await db.promise().query(
+        'INSERT INTO visits (tour_id, place_id, `order`) VALUES (?, ?, ?)',
+        [insertedId, placeId, i + 1]
+      );
+    }
 
     const [newRoute] = await db.promise().query(
       `SELECT * FROM tours WHERE id = ?`,
@@ -384,8 +440,44 @@ app.post('/routes', async (req, res) => {
     );
 
     let formattedRoute = newRoute[0];
-    formattedRoute.locations = JSON.parse(formattedRoute.locations || '[]');
+    // Procurar locais (places) associados à rota nas tabelas visits/places
+    let locationsArr = [];
 
+    try {
+      const [places] = await db.promise().query(
+        `SELECT p.id, p.name, p.latitude, p.longitude, p.category, v.order
+         FROM visits v
+         JOIN places p ON v.place_id = p.id
+         WHERE v.tour_id = ?
+         ORDER BY v.order ASC`,
+        [insertedId]
+      );
+      locationsArr = places.map(p => ({
+        id: p.id,
+        name: p.name,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        category: p.category,
+        order: p.order
+      }));
+    } catch (err) {
+      locationsArr = [];
+    }
+    formattedRoute.locations = locationsArr;
+
+    // Formatar data de criação
+    let formattedDate = '';
+    if (formattedRoute.created_at) {
+      const dateObj = new Date(formattedRoute.created_at);
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+    formattedRoute.created_at_formatted = formattedDate;
+    formattedRoute.createdAt = formattedRoute.created_at;
     res.status(201).json(formattedRoute);
   } catch (error) {
     console.error('Erro ao criar rota:', error);
@@ -434,11 +526,28 @@ app.put('/routes/:id', async (req, res) => {
   }
 });
 
+
 // Eliminar rota existente
 app.delete('/routes/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
+    // Eliminar visitas associadas à rota
+    await db.promise().query(
+      `DELETE FROM visits WHERE tour_id = ?`,
+      [id]
+    );
+    // Eliminar trabalhos (works) associados à rota
+    await db.promise().query(
+      `DELETE FROM works WHERE tour_id = ?`,
+      [id]
+    );
+    // Eliminar reservas associadas à rota
+    await db.promise().query(
+      `DELETE FROM reservations WHERE tour_id = ?`,
+      [id]
+    );
+    // Finalmente, eliminar a rota
     await db.promise().query(
       `DELETE FROM tours WHERE id = ?`,
       [id]
@@ -764,7 +873,7 @@ app.get('/reservations', async (req, res) => {
   }
 });
 
-// 📌 Cancelar reserva manualmente (ex: por parte do guia)
+// Cancelar reserva manualmente (ex: por parte do guia)
 app.put('/reservations/:id/cancel', async (req, res) => {
   const { id } = req.params;
   const cancelledAt = new Date();
@@ -827,6 +936,3 @@ app.get('/guides', async (req, res) => {
     res.status(500).json({ error: 'Erro interno ao buscar os guias.' });
   }
 });
-
-
-
