@@ -45,12 +45,11 @@ const MyReservations = ({ onClose }) => {
   
   // Filter reservations to show only confirmed or cancelled
   let filteredReservations = [];
+  
   if (reservations) {
-    console.log(reservations)
     filteredReservations = reservations.results.filter(reservation => 
       reservation.status === 'confirmed' || reservation.status === 'cancelled'
     );
-    console.log(filteredReservations)
   }
   
   // Handle guide access restriction
@@ -151,9 +150,13 @@ const MyReservations = ({ onClose }) => {
   };
 
   const formatTimeSlot = (selectedHours, totalHours) => {
-    if (!selectedHours) return 'Time not specified';
-    return `${selectedHours} (${totalHours}h)`;
-  };
+  if (!selectedHours || selectedHours.length === 0) return 'Time not specified';
+  
+  const startHour = selectedHours.split(':')[0];
+  const startMin = selectedHours.split(':')[1];
+  const duration = parseInt(totalHours.split(':')[0]);
+  return `${startHour}:${startMin} (${duration}h)`;
+};
 
   // Format date in WEST (Europe/Lisbon) time zone
   /*const formatDate = (dateString) => {
