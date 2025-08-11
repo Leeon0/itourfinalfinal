@@ -26,7 +26,7 @@ export const RoutesProvider = ({ children }) => {
     setLoading(true);
     try {
       const response = await axios.get('/routes');
-      console
+
       const routesData = response.data;
       // Para cada rota, obter os lugares visitados
       const routesWithLocations = await Promise.all(
@@ -61,9 +61,7 @@ export const RoutesProvider = ({ children }) => {
       const newRoute = {
         ...routeData,
         createdBy: user.id,
-        createdByName: user.name,
         createdAt: new Date().toISOString(),
-        isPublic: true
       };
 
       const res = await axios.post('/routes', newRoute);
