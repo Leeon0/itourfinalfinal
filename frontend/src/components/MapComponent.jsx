@@ -49,17 +49,17 @@ const MapComponent = ({ onOpenRoutesList }) => {
     className: 'custom-popup-yellow'
   };
 
-  // ✅ MODIFICAR esta função para também abrir a lista de rotas
+  // ✅ Modificar esta função para também abrir a lista de rotas
   const handleBaseClick = (route) => {
     if (activeRoute?.id === route.id) {
       clearActiveRoute();
     } else {
       selectRoute(route);
-      // ✅ ABRIR LISTA DE ROTAS após selecionar a rota
+  //  Abrir lista de rotas após selecionar a rota
       if (onOpenRoutesList) {
         setTimeout(() => {
           onOpenRoutesList();
-        }, 100); // Pequeno delay para garantir que a rota seja selecionada primeiro
+  }, 100); // Pequeno atraso para garantir que a rota seja selecionada primeiro
       }
     }
   };
@@ -81,7 +81,7 @@ const MapComponent = ({ onOpenRoutesList }) => {
 
   return (
     <>
-      {/* CSS personalizado para popup */}
+  {/* CSS personalizado para popup */}
       <style>{`
         .custom-popup-yellow .leaflet-popup-content-wrapper {
           background: linear-gradient(to top, #F4E6B0, #EEEEEE) !important;
@@ -124,11 +124,11 @@ const MapComponent = ({ onOpenRoutesList }) => {
         maxBoundsViscosity={1.0}
         minZoom={9}
         maxZoom={18}
-        zoomControl={false} // ✅ ADICIONADO: Remove os botões + e -
+  zoomControl={false} //  Adicionado: Remove os botões + e -
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         
-        {/* Linha da rota ativa */}
+  {/* Linha da rota ativa */}
         {routeCoordinates.length > 1 && (
           <Polyline 
             positions={routeCoordinates} 
@@ -138,7 +138,7 @@ const MapComponent = ({ onOpenRoutesList }) => {
           />
         )}
 
-        {/* Mostrar bases de todas as rotas quando nenhuma está ativa */}
+  {/* Mostrar bases de todas as rotas quando nenhuma está ativa */}
         {!activeRoute && uniqueBases.map((route, index) => (
           <Marker 
             key={`base-${route.id}`}
@@ -209,7 +209,7 @@ const MapComponent = ({ onOpenRoutesList }) => {
                   color: '#666',
                   fontStyle: 'italic'
                 }}>
-                  {/* ✅ ATUALIZAR texto do popup */}
+                  {/*  Atualizar texto do popup */}
                   Click to view route details
                 </div>
               </div>
@@ -217,7 +217,7 @@ const MapComponent = ({ onOpenRoutesList }) => {
           </Marker>
         ))}
         
-        {/* Mostrar pontos da rota ativa */}
+  {/* Mostrar pontos da rota ativa */}
         {activeRoute && activeRoute.locations && activeRoute.locations.map((marker, i) => (
           <Marker position={marker.position} key={marker.id || i} icon={customIcon}>
             <Popup {...customPopupOptions}>
@@ -271,7 +271,7 @@ const MapComponent = ({ onOpenRoutesList }) => {
           </Marker>
         ))}
 
-        {/* Marcador da base location da rota ativa */}
+  {/* Marcador da localização base da rota ativa */}
         {activeRoute && activeRoute.baseLocation && (
           <Marker 
             position={activeRoute.baseLocation.position} 

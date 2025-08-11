@@ -18,34 +18,34 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  //const [guideRating, setGuideRating] = useState({ averageRating: 0, totalRatings: 0 });
+  //const [guideRating, setGuideRating] = useState({ averageRating: 0, totalRatings: 0 }); // Estado para classificação do guia
 
   const { selectRoute, activeRoute, clearActiveRoute } = useRoutes();
   const { isGuide } = useAuth();
   const cardRefs = useRef({});
 
-  // Buscar rotas e rating do guia ao montar
+  // Buscar rotas e avaliação do guia ao montar
   useEffect(() => {
     const fetchGuideData = async () => {
       try {
         setLoading(true);
         setError('');
         console.log('Fetching routes for guide:', guide);
-        // Buscar rotas do guia
+  // Buscar rotas do guia
         const res = await axios.get(`http://localhost:8000/routes/guide/${guide.id}`);
         setRoutes(res.data.results || []);
 
-        // Buscar rating médio do guia
-        /*const ratingRes = await axios.get(`/ratings/guide/${guide.id}`);
+  // Buscar avaliação média do guia
+  /*const ratingRes = await axios.get(`/ratings/guide/${guide.id}`); // Exemplo de chamada para classificação
         setGuideRating(ratingRes.data || { averageRating: 0, totalRatings: 0 });*/
 
-      } catch (err) {
-        console.error('Erro ao buscar dados do guia:', err);
-        setError('Erro ao carregar dados do guia.');
-      } finally {
-        setLoading(false);
-      }
-    };
+       } catch (err) {
+            console.error('Error fetching guide data:', err);
+            setError('Error loading guide data.');
+          } finally {
+            setLoading(false);
+          }
+        };
 
     fetchGuideData();
   }, [guide.id]);
@@ -61,7 +61,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
   return (
     <Slide in={true} direction="right" timeout={700} mountOnEnter unmountOnExit>
       <SidePanel elevation={2} sx={{ height: '90vh', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Conteúdo com scroll */}
+  {/* Conteúdo com scroll */}
         <Box sx={{
           flex: 1, overflow: 'auto', paddingBottom: '60px',
           '&::-webkit-scrollbar': { display: 'none' },
@@ -69,7 +69,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
         }}>
           {/* Título */}
           <Box display="flex" justifyContent="center" alignItems="center" sx={{ mb: 3, mt: 3 }}>
-            <Typography variant="h5" fontWeight="bold">Perfil do Guia</Typography>
+            <Typography variant="h5" fontWeight="bold">Guide Profile</Typography>
           </Box>
 
           {/* Perfil do guia */}
@@ -97,7 +97,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                     Member since {guide.created_at ? new Date(guide.created_at).toLocaleDateString('pt-PT') : 'N/D'}
                   </Typography>
                   <Box sx={{ mt: 1 }}>
-                    <Chip label="Guia" size="small" sx={{ backgroundColor: '#FFC107', color: '#000' }} />
+                    <Chip label="Guide" size="small" sx={{ backgroundColor: '#FFC107', color: '#000' }} />
                   </Box>
                 </Box>
               </Box>
@@ -134,10 +134,10 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
             </CardContent>
           </Card>
 
-          {/* Seção das Rotas */}
+          {/* Secção das Rotas */}
           <Divider sx={{ my: 2, borderColor: '#FFC107' }} />
           <Box textAlign="center" mb={2}>
-            <Typography variant="h6">Rotas do Guia</Typography>
+            <Typography variant="h6">Guide Routes</Typography>
           </Box>
 
           {/* Lista de Rotas */}
@@ -149,14 +149,14 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
             <Box textAlign="center" py={4}>
               <Typography color="error">{error}</Typography>
               <Button onClick={() => window.location.reload()} sx={{ mt: 2, backgroundColor: '#FFC107' }}>
-                Tentar Novamente
+                Try Again
               </Button>
             </Box>
           ) : routes.length === 0 ? (
             <Box textAlign="center" py={4}>
               <RouteIcon sx={{ fontSize: 48, color: 'text.secondary' }} />
               <Typography variant="body1" color="text.secondary" fontWeight="medium">
-                Nenhuma rota encontrada
+                No routes found
               </Typography>
             </Box>
           ) : (
@@ -201,7 +201,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
                           )}
                         </Box>
 
-                        {/* Chips de info */}
+                        {/* Chips de informação */}
                         <Stack direction="row" spacing={1} flexWrap="wrap">
                           <Chip
                             label={`${route.locations?.length || 0} locais`}
@@ -267,7 +267,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
           )}
         </Box>
 
-        {/* Botão Voltar */}
+  {/* Botão Voltar */}
         <Button
           onClick={onBack}
           fullWidth
@@ -289,7 +289,7 @@ const GuideRoutes = ({ guide, onBack, onReserve }) => {
             }
           }}
         >
-          Voltar aos Guias
+          Back to Guides
         </Button>
       </SidePanel>
     </Slide>

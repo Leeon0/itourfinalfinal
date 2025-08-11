@@ -61,7 +61,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
   const sortedRoutes = React.useMemo(() => {
     if (!routes) return [];
 
-    // Mostrar rutas predeterminadas (id <= 12) y públicas (id > 12)
+  // Mostrar rotas predefinidas (id <= 12) e públicas (id > 12)
     const defaultRoutes = routes.filter(route => route.id <= 12);
     const publicRoutes = routes.filter(route => route.id > 12);
     const routesCopy = [...defaultRoutes, ...publicRoutes];
@@ -198,7 +198,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
                     >
                       <CardContent sx={{ flexGrow: 1 }}>
                         <Stack direction="column" spacing={1}>
-                          {/* Route title */}
+                          {/* Título da Rota */}
                           <Typography
                             variant="h6"
                             sx={{
@@ -212,7 +212,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
                             {route.name}
                           </Typography>
 
-                          {/* Image */}
+                          {/* Imagem */}
                           <Box sx={{ mb: 1 }}>
                             {route.tour_image ? (
                               <Avatar
@@ -230,7 +230,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
                             )}
                           </Box>
 
-                          {/* Description */}
+                          {/* Descrição */}
                           {route.description && (
                             <Typography
                               variant="body2"
@@ -272,7 +272,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
                             />
                           </Stack>
 
-                          {/* Locations preview */}
+                          {/* Pré-visualização dos locais */}
                           {(activeRoute?.id === route.id ? activeRoute.locations?.length : route.locations?.length) > 0 && (
                             <Box sx={{ maxHeight: '120px', overflow: 'auto', mt: 1 }}>
                               {(activeRoute?.id === route.id ? activeRoute.locations : route.locations).map((location, index) => (
@@ -304,7 +304,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
                             </Box>
                           )}
 
-                          {/* Created Date */}
+                          {/* Data de criação */}
                           <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.80rem', mt: 1 }}>
                             Created on {route.created_at_formatted ? route.created_at_formatted : (route.createdAt ? new Date(route.createdAt).toLocaleDateString('en-GB') : 'Date not available')}
                           </Typography>
@@ -343,7 +343,7 @@ const RoutesList = ({ onClose, onCreateRoute }) => {
           Close
         </Button>
 
-        {/* Dialogo para reservas */}
+  {/* Diálogo para reservas */}
         <Dialog open={reserveOpen} onClose={() => setReserveOpen(false)}>
           <DialogTitle>Make a Reservation</DialogTitle>
           <DialogContent>

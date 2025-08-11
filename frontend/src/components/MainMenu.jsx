@@ -47,8 +47,8 @@ const MainMenu = ({
   const handleCloseWithSlide = () => {
     setVisible(false);
     setTimeout(() => {
-      onClose(); // notify parent after slide finishes
-    }, 300); // matches MUI Slide transition duration
+  onClose(); // notificar o pai após o slide terminar
+  }, 300); // corresponde à duração da transição do Slide do MUI
   };
 
   const Logo = ({ size = 60 }) => (
@@ -112,13 +112,13 @@ const MainMenu = ({
 
   return (
     <>
-      {/* Overlay para desktop */}
+  {/* Sobreposição para desktop */}
       <Box sx={overlayStyle} onClick={handleCloseWithSlide} />
       
-      {/* Painel do menu */}
+  {/* Painel do menu */}
       <Slide direction="left" in={visible} mountOnEnter unmountOnExit>
         <Box sx={panelStyle}>
-          {/* Header com logo centralizado e botão fechar à direita */}
+          {/* Cabeçalho com logotipo centralizado e botão fechar à direita */}
           <Box
             sx={{
               display: 'flex',
@@ -340,7 +340,7 @@ const MainMenu = ({
             </List>
           </Box>
 
-          {/* Footer com logout */}
+          {/* Rodapé com logout */}
           <Box sx={{ borderTop: '1px solid #FFC107', mt: 2 }}>
             <List sx={{ padding: 0 }}>
               <ListItem disablePadding>

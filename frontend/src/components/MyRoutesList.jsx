@@ -28,7 +28,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
   const { user } = useAuth();
   const [showPanel, setShowPanel] = useState(true);
 
-  // Mostrar solo rutas creadas por el guía logueado y cuyo id > 12
+  // Mostrar apenas rotas criadas pelo guia autenticado e cujo id > 12
   const myRoutes = routes.filter(route => route.id > 12 && route.created_by === user?.id);
 
   const handleRouteClick = (route) => {
@@ -40,16 +40,16 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
   };
 
   const handleCancel = () => {
-  setShowPanel(false); // triggers Slide exit
+  setShowPanel(false); // dispara saída do Slide
   };
 
   const handleDeleteRoute = async (e, routeId) => {
     e.stopPropagation();
-    if (window.confirm('Tem certeza que deseja excluir esta rota?')) {
+    if (window.confirm('Are you sure you want to delete this route?')) {
       try {
         await deleteRoute(routeId);
       } catch (error) {
-        alert('Erro ao excluir rota: ' + error.message);
+        alert('Error deleting route: ' + error.message);
       }
     }
   };
@@ -66,7 +66,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         borderRadius: 4
       }}
     >
-      {/* Conteúdo com scroll */}
+  {/* Conteúdo com scroll */}
       <Box sx={{ 
         flex: 1, 
         overflow: 'auto',
@@ -77,14 +77,14 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         msOverflowStyle: 'none',
         scrollbarWidth: 'none'
       }}>
-        {/* Header */}
+  {/* Cabeçalho */}
         <Box display="flex" justifyContent="center" alignItems="center" sx={{ mb: 3 }}>
           <Typography variant="h5">
             My Routes
           </Typography>
         </Box>
 
-        {/* Botão Criar Rota */}
+  {/* Botão Criar Rota */}
         <Box sx={{ px: 2, mb: 3 }}>
           <Button
             onClick={onCreateRoute}
@@ -105,7 +105,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
           </Button>
         </Box>
 
-        {/* Lista de rotas */}
+  {/* Lista de rotas */}
         {loading ? (
           <Box display="flex" justifyContent="center" py={4}>
             <CircularProgress sx={{ color: '#FFC107' }}/>
@@ -151,7 +151,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
 >
   <CardContent sx={{ flexGrow: 1 }}>
     <Stack direction="column" spacing={1}>
-      {/* Route title */}
+  {/* Título da Rota */}
       <Typography
         variant="h6"
         sx={{
@@ -165,7 +165,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         {route.name}
       </Typography>
 
-      {/* Image */}
+  {/* Imagem */}
       <Box sx={{ mb: 1 }}>
         {route.routeImageBase64 ? (
           <Avatar
@@ -183,7 +183,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         )}
       </Box>
 
-      {/* Description */}
+  {/* Descrição */}
       {route.description && (
         <Typography
           variant="body2"
@@ -200,7 +200,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         </Typography>
       )}
 
-      {/* Chips */}
+  {/* Chips */}
       <Stack direction="row" gap={1} flexWrap="wrap">
         <Chip
           label={`${(activeRoute?.id === route.id ? activeRoute.locations?.length : route.locations?.length) || 0} locations`}
@@ -225,7 +225,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         />
       </Stack>
 
-      {/* Locations preview */}
+  {/* Pré-visualização dos locais */}
       {(activeRoute?.id === route.id ? activeRoute.locations?.length : route.locations?.length) > 0 && (
         <Box sx={{ maxHeight: '120px', overflow: 'auto', mt: 1 }}>
           {(activeRoute?.id === route.id ? activeRoute.locations : route.locations).map((location, index) => (
@@ -257,7 +257,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         </Box>
       )}
 
-      {/* Created Date + Delete */}
+  {/* Data de criação + Eliminar */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.80rem' }}>
           Created on {route.created_at_formatted ? route.created_at_formatted : (route.createdAt ? new Date(route.createdAt).toLocaleDateString('en-GB') : 'Date not available')}
@@ -287,7 +287,7 @@ const MyRoutesList = ({ onClose, onCreateRoute }) => {
         )}
       </Box>
 
-      {/* Botão Close fixo */}
+  {/* Botão Fechar fixo */}
       <Button 
         onClick={handleCancel}
         fullWidth

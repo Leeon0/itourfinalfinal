@@ -15,7 +15,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Instancia da aplicação Express
+// Instância da aplicação Express
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
@@ -24,19 +24,19 @@ app.use(cors({
   credentials: true
 }));
 
-// Conexão à base de dados MySQL
+// Ligação à base de dados MySQL
 const db = mysql.createConnection({
-    host: "localhost", // Database host
-    user: "itadmin",      // Database username
-    password: "1234", // Database password
-    database: "iroutedb" // Name of the database
+  host: "localhost", // Servidor da base de dados
+  user: "itadmin",      // Nome de utilizador da base de dados
+  password: "1234", // Palavra-passe da base de dados
+  database: "iroutedb" // Nome da base de dados
 });
 
 // Servir ficheiros da pasta de uploads
 app.use('/uploads', express.static('uploads'));
 
 
-// Rota principal para teste do backend
+// Rota principal para testar o backend
 app.get('/', (req, res) => {
     return res.json("From backend side");
 });
@@ -51,8 +51,8 @@ app.get('/users', (req, res) => {
 });
 // Endpoint para devolver o utilizador autenticado (dummy, sem sessão)
 app.get('/user', (req, res) => {
-    // Si tuvieras sesión, aquí la usarías para identificar el usuario
-    // Por ahora, simplemente devuelve null o un objeto vacío
+  // Se tivesses sessão, aqui usarias para identificar o utilizador
+  // Por agora, simplesmente devolve null ou um objeto vazio
     return res.status(200).json(null);
 });
 
@@ -99,10 +99,10 @@ app.post('/login', (req, res) => {
                     console.error('Error during login:', error);
                     return res.status(500).json({ error: 'Internal server error' });
                 }
-                // If the account exists
+                // Se a conta existir
                 if (results.length > 0) {
                     const user = results[0];
-                    const match = bcrypt.compare(password, user.password); // compare plaintext with hash
+                    const match = bcrypt.compare(password, user.password); // comparar texto simples com hash
                     if (match) {
                       res.status(200).json({ message: 'Login successful', user });
                     } else {
@@ -132,10 +132,10 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
     }
 
     try {
-        // Hash the given password
+  // Gerar hash da palavra-passe fornecida
         const hash = await bcrypt.hash(password, saltRounds);
 
-        // Insert user
+  // Inserir utilizador
         await db.promise().query(
             `INSERT INTO users 
                 (name, email, type, password, created_at, profile_image) 
@@ -148,7 +148,7 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
             [email]
         );
 
-        // If user has a car, insert car info
+  // Se o utilizador tiver carro, inserir informação do carro
         if (hasCar) {
             let registration = req.body.registration;
             let brand = req.body.brand;
@@ -169,7 +169,7 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
                 [guide_id, registration, brand, model, color, capacity, description]
             );
         }
-        // Obtener el usuario completo con los datos del coche
+  // Obter o utilizador completo com os dados do carro
         const [fullUserRow] = await db.promise().query(
           `SELECT 
               u.id, 
@@ -215,7 +215,7 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
   profile_image = req.file? `uploads/${req.file.filename}` : null;
 
   try {
-    // if user uploaded a new photo, change photo
+  // se o utilizador enviou uma nova foto, alterar foto
     if (profile_image) {
       db.query(
         `UPDATE users SET name = ?, profile_image = ? WHERE id = ?;`,
@@ -228,7 +228,7 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
         [name, id]
       );
     }
-    // if user is a guide, change car info
+  // se o utilizador for guia, alterar informação do carro
     if (req.body.licensePlate) {
       let registration = req.body.licensePlate;
       let brand = req.body.brand;
@@ -308,9 +308,9 @@ app.get('/routes', (req, res) => {
         if (error) {
             return res.status(500).json({ message: 'Internal server error' });
         }
-        // Para cada ruta, buscar los lugares (paradas) y devolverlos en locations
+  // Para cada rota, procurar os lugares (paragens) e devolvê-los em locations
         const formattedResults = await Promise.all(results.map(async (route) => {
-            // Buscar lugares (paradas) de la ruta
+            // Procurar lugares (paragens) da rota
             let locationsArr = [];
             try {
                 const [places] = await db.promise().query(
@@ -332,7 +332,7 @@ app.get('/routes', (req, res) => {
             } catch (err) {
                 locationsArr = [];
             }
-            // Formatear la fecha created_at a formato legible (ej: DD/MM/YYYY HH:mm)
+            // Formatar a data created_at para formato legível (ex: DD/MM/YYYY HH:mm)
             let formattedDate = '';
             if (route.created_at) {
                 const dateObj = new Date(route.created_at);
@@ -399,14 +399,14 @@ app.post('/routes', upload.single('routeImage'), async (req, res) => {
 
     const insertedId = result.insertId;
 
-    // Log para depuración
+  // Log para depuração
     console.log('Insertando en works:', { createdBy, insertedId });
-    // Asociar la ruta al guía en la tabla works
+  // Associar a rota ao guia na tabela works
     await db.promise().query(
       'INSERT INTO works (guide_id, tour_id) VALUES (?, ?)',
       [createdBy, insertedId]
     );
-// Inserir visitas para cada local (parada) para associar à rota
+// Inserir visitas para cada local (paragem) para associar à rota
     for (let i = 0; i < locations.length; i++) {
       const loc = locations[i];
 // Procurar se já existe um lugar com o mesmo nome
@@ -416,10 +416,10 @@ app.post('/routes', upload.single('routeImage'), async (req, res) => {
         [loc.name]
       );
       if (foundPlace.length > 0) {
-// Se existe, usar esse id
+// Se existir, usar esse id
         placeId = foundPlace[0].id;
       } else {
-// Se não existe, criar novo lugar
+// Se não existir, criar novo lugar
         const categoryValue = loc.category != null && loc.category !== '' ? loc.category : 'other';
         const [insertPlace] = await db.promise().query(
           'INSERT INTO places (name, latitude, longitude, category) VALUES (?, ?, ?, ?)',
@@ -438,7 +438,7 @@ app.post('/routes', upload.single('routeImage'), async (req, res) => {
       [insertedId]
     );
     let formattedRoute = newRoute[0];
-// Buscar locais (places) associados à rota nas tabelas visits/places
+// Procurar locais (places) associados à rota nas tabelas visits/places
     let locationsArr = [];
     try {
       const [places] = await db.promise().query(
@@ -527,22 +527,22 @@ app.delete('/routes/:id', async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Eliminar visitas associadas à rota
+  // Eliminar visitas associadas à rota
     await db.promise().query(
       `DELETE FROM visits WHERE tour_id = ?`,
       [id]
     );
-    // Eliminar trabalhos (works) associados à rota
+  // Eliminar trabalhos (works) associados à rota
     await db.promise().query(
       `DELETE FROM works WHERE tour_id = ?`,
       [id]
     );
-    // Eliminar reservas associadas à rota
+  // Eliminar reservas associadas à rota
     await db.promise().query(
       `DELETE FROM reservations WHERE tour_id = ?`,
       [id]
     );
-    // Finalmente, eliminar a rota
+  // Finalmente, eliminar a rota
     await db.promise().query(
       `DELETE FROM tours WHERE id = ?`,
       [id]
@@ -607,7 +607,7 @@ app.get('/guides', (req, res) => {
     });
 });
 
-// Buscar as rotas de um guia específico
+// Procurar as rotas de um guia específico
 app.get('/routes/guide/:guideID', (req, res) => {
     const guideID = req.params["guideID"];
     console.log('Guide ID:', guideID);
@@ -627,7 +627,7 @@ app.get('/routes/guide/:guideID', (req, res) => {
             console.error('Erro ao buscar rotas do guia:', error);
             return res.status(500).json({ message: 'Internal server error', error });
         }
-        // Para cada ruta, buscar los lugares (paradas) y devolverlos en locations
+  // Para cada rota, procurar os lugares (paragens) e devolvê-los em locations
         const routesWithLocations = await Promise.all(results.map(async (route) => {
             try {
                 const [places] = await db.promise().query(
@@ -638,7 +638,7 @@ app.get('/routes/guide/:guideID', (req, res) => {
                      ORDER BY v.order ASC`,
                     [route.id]
                 );
-                // Formato igual que MyRoutes
+                // Formato igual ao MyRoutes
                 const locations = places.map(p => ({
                     id: p.id,
                     name: p.name,
@@ -774,7 +774,7 @@ app.post('/ratings', async (req, res) => {
   const createdAt = new Date();
 
   try {
-    // Verificar se a reserva já foi avaliada
+  // Verificar se a reserva já foi avaliada
     const [existing] = await db.promise().query(
       `SELECT rated FROM reservations WHERE id = ?`,
       [reservationId]
@@ -788,7 +788,7 @@ app.post('/ratings', async (req, res) => {
       return res.status(400).json({ error: 'Reserva já avaliada' });
     }
 
-    // Inserir rating
+  // Inserir rating
     await db.promise().query(
       `INSERT INTO ratings (
         reservation_id, guide_id, guide_name, 
@@ -802,13 +802,13 @@ app.post('/ratings', async (req, res) => {
       ]
     );
 
-    // Atualizar reserva como avaliada
+  // Atualizar reserva como avaliada
     await db.promise().query(
       `UPDATE reservations SET rated = 1, rating_submitted_at = ? WHERE id = ?`,
       [createdAt, reservationId]
     );
 
-    // Recalcular média
+  // Recalcular média
     await updateGuideAverageRating(guideId);
 
     return res.status(200).json({ message: 'Rating submetido com sucesso' });
@@ -840,7 +840,7 @@ async function updateGuideAverageRating(guideId) {
   }
 }
 
-// Buscar rating médio do guia
+// Procurar rating médio do guia
 app.get('/guide/:guideId/rating', async (req, res) => {
   const { guideId } = req.params;
 
@@ -871,7 +871,7 @@ app.get('/reservations', async (req, res) => {
   try {
     const [rows] = await db.promise().query('SELECT * FROM reservations ORDER BY created_at DESC');
 
-    // Transformar os campos JSON em arrays legíveis
+  // Transformar os campos JSON em arrays legíveis
     const formattedReservations = rows.map(reserva => {
       return {
         ...reserva,

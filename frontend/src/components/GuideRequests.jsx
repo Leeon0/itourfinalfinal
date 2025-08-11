@@ -124,13 +124,13 @@ const Calendar = ({ selectedDate, onDateSelect, reservationDates }) => {
 };
 
 const GuideRequests = ({ onClose }) => {
-  // Maneja el cambio de ruta seleccionada en el filtro
+  // Gereia a mudança de rota selecionada no filtro
   const handleRouteChange = (event) => {
     setSelectedRoute(event.target.value);
-    setSelectedDate(null); // Reinicia la fecha seleccionada al cambiar de ruta
+  setSelectedDate(null); // Reinicia a data selecionada ao mudar de rota
   };
 
-  // Maneja la selección de fecha en el calendario
+  // Gereia a seleção de data no calendário
   const handleDateSelect = (date) => {
     setSelectedDate(date);
   };
@@ -238,7 +238,7 @@ const GuideRequests = ({ onClose }) => {
         display: 'flex', 
         flexDirection: 'column', 
         borderRadius: 4,
-        width: 420 // ✅ NOVO: Mais largo para acomodar calendário
+  width: 420 // ✅ NOVO: Mais largo para acomodar calendário
       }}>
         <Box sx={{ 
           flex: 1, 
@@ -304,7 +304,7 @@ const GuideRequests = ({ onClose }) => {
                 reservationDates={getReservationDates()}
               />
 
-              {/* ✅ NOVO: Info sobre seleção */}
+              {/* ✅ NOVO: Informação sobre seleção */}
               {selectedDate && (
                 <Alert severity="info" sx={{ 
                     mt: 2, 
@@ -381,7 +381,7 @@ const GuideRequests = ({ onClose }) => {
                         <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
                           <Box display="flex" alignItems="flex-start">
                             
-                            {/* Route image */}
+                            {/* Imagem da rota */}
                             <Box sx={{ mr: 2, flexShrink: 0 }}>
                               {reservation.routeImage ? (
                                 <Avatar 
@@ -425,7 +425,7 @@ const GuideRequests = ({ onClose }) => {
                                 {reservation.routeName}
                               </Typography>
                               
-                              {/* Tourist info */}
+                              {/* Informação do turista */}
                               <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
                                 <PersonIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                                 <Typography 
@@ -437,7 +437,7 @@ const GuideRequests = ({ onClose }) => {
                                 </Typography>
                               </Box>
 
-                              {/* Time */}
+                              {/* Hora */}
                               <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
                                 <ScheduleIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
                                 <Typography 
@@ -509,7 +509,7 @@ const GuideRequests = ({ onClose }) => {
                 </Box>
               )}
 
-              {/* Alert final */}
+              {/* Alerta final */}
               {selectedDate && filteredReservations.length > 0 && (
                 <Alert 
                   severity="info" 
@@ -530,7 +530,7 @@ const GuideRequests = ({ onClose }) => {
           )}
         </Box>
 
-        {/* Close button */}
+  {/* Botão fechar */}
         <Button
           onClick={() => setShowPanel(false)}
           fullWidth

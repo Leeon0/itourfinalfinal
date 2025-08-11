@@ -47,12 +47,12 @@ const ImageUpload = ({
     setError('');
     
     if (handleImageChange) {
-      handleImageChange(file); // Pass the raw File object
+      handleImageChange(file); // Passar o objeto File bruto
     }
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreviewUrl(e.target.result); // base64 for preview only
+      setPreviewUrl(e.target.result); // base64 apenas para pré-visualização
     };
     reader.readAsDataURL(file);
 

@@ -44,14 +44,14 @@ const GuidesList = ({ onClose, onReserve }) => {
       const response = await axios.get('http://localhost:8000/guides');
       let guides = response.data.results || [];
 
-      // Mapear routesCount pero mostrar todos los guías
+  // Mapear routesCount mas mostrar todos os guias
       guides = guides
         .map((guide) => ({
           ...guide,
           routesCount: guide.routesCount || 0
         }));
 
-      // Ordenar por nombre o por rating
+  // Ordenar por nome ou por avaliação
       const sortedGuides = guides.sort((a, b) => {
         if (sortType === 'name') {
           return a.name.localeCompare(b.name);

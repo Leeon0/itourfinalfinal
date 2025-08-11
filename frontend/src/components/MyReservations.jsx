@@ -41,12 +41,12 @@ const MyReservations = ({ onClose }) => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Filter reservations to show only confirmed or cancelled
+  // Filtrar reservas para mostrar apenas confirmadas ou canceladas
   const filteredReservations = reservations.filter(reservation => 
     reservation.status === 'confirmed' || reservation.status === 'cancelled'
   );
 
-  // Handle guide access restriction
+  // Lidar com restrição de acesso para guias
   if (isGuide()) {
     return (
       <Slide in={showPanel} direction="down" timeout={700} mountOnEnter unmountOnExit onExited={onClose}>
@@ -115,14 +115,14 @@ const MyReservations = ({ onClose }) => {
     return `${startTime} (${totalHours}h)`;
   };
 
-  // Format date in WEST (Europe/Lisbon) time zone
+  // Formatar data no fuso horário WEST (Europa/Lisboa)
   const formatDate = (dateString) => {
     const [year, month, day] = dateString.split('-').map(Number);
     const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('en-GB', { timeZone: 'Europe/Lisbon' });
   };
 
-  // Format createdAt date
+  // Formatar data de criação
   const formatCreatedAt = (createdAt) => {
     if (!createdAt) return 'Date not available';
     const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
@@ -239,7 +239,7 @@ const MyReservations = ({ onClose }) => {
                       )}
 
                       <CardContent sx={{ flexGrow: 1 }}>
-                        {/* Route Name */}
+                        {/* Nome da Rota */}
                         <Typography 
                           variant="h6" 
                           fontWeight="bold" 
@@ -255,7 +255,7 @@ const MyReservations = ({ onClose }) => {
                           {reservation.routeName}
                         </Typography>
 
-                        {/* Route Image */}
+                        {/* Imagem da Rota */}
                         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
                           {reservation.routeImage ? (
                             <Avatar 
@@ -284,7 +284,7 @@ const MyReservations = ({ onClose }) => {
                           )}
                         </Box>
 
-                        {/* Guide and Date (Left), Duration (Right) */}
+                        {/* Guia e Data (Esquerda), Duração (Direita) */}
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                           <Box>
                             {reservation.routeCreatedByName && (
@@ -322,7 +322,7 @@ const MyReservations = ({ onClose }) => {
                           </Box>
                         </Box>
 
-                        {/* Status and Rating/Delete Buttons */}
+                        {/* Estado e Botões de Avaliação/Eliminar */}
                         <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2 , mb: 2}}>
                           <Chip 
                             label={getStatusLabel(reservation.status)} 
@@ -339,9 +339,9 @@ const MyReservations = ({ onClose }) => {
                                   textTransform: 'none',
                                   bgcolor: '#FFC107',
                                   color: '#333',
-                                  fontSize: '0.80rem', // Smaller font size
-                                  padding: '6px 8px',  // Smaller padding
-                                  minWidth: '80px',    // Smaller minimum width
+                                  fontSize: '0.80rem', // Tamanho de fonte menor
+                                  padding: '6px 8px',  // Espaçamento menor
+                                  minWidth: '80px',    // Largura mínima menor
                                   '&:hover': { bgcolor: '#FFB300' }
                                 }}
                               onClick={() => setRatingDialog({ open: true, reservation })}
@@ -351,7 +351,7 @@ const MyReservations = ({ onClose }) => {
                           )}
                         </Box>
 
-                        {/* Booked On */}
+                        {/* Reservado em */}
                         <Typography 
                           variant="caption" 
                           color="text.secondary" 

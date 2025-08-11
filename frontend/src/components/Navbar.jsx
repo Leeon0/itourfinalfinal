@@ -34,7 +34,7 @@ const Navbar = ({ onCreateRoute, onShowRoutes, onShowGuides,onShowMyRoutes, onSh
 
   return (
     <>
-      {/* Chip do tipo de utilizador - Maior */}
+  {/* Chip do tipo de utilizador - maior */}
       <Box
   sx={{
     position: 'absolute',
@@ -59,7 +59,7 @@ const Navbar = ({ onCreateRoute, onShowRoutes, onShowGuides,onShowMyRoutes, onSh
   />
 </Box>
 
-      {/* Botão de menu hambúrguer */}
+  {/* Botão de menu hambúrguer */}
       <Box
         sx={{
           position: 'absolute',
@@ -93,7 +93,7 @@ const Navbar = ({ onCreateRoute, onShowRoutes, onShowGuides,onShowMyRoutes, onSh
       </Box>
         
 
-      {/* Botão FAB para criar rota (apenas para guias) - No canto inferior direito */}
+  {/* Botão FAB para criar rota (apenas para guias) - no canto inferior direito */}
       {isGuide() && (
         <Fab
           onClick={onCreateRoute}
@@ -117,13 +117,13 @@ const Navbar = ({ onCreateRoute, onShowRoutes, onShowGuides,onShowMyRoutes, onSh
             },
             transition: 'all 0.2s ease-in-out'
           }}
-          title="Criar Nova Rota"
+          title="Create New Route"
         >
           <AddIcon sx={{ fontSize: 35, fontWeight: 'bold'}} />
         </Fab>
       )}
 
-      {/* Menu principal */}
+  {/* Menu principal */}
       {showMainMenu && (
         <MainMenu
           onClose={handleMenuClose}

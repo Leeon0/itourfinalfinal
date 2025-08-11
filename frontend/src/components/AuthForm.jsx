@@ -260,14 +260,14 @@ const AuthForm = () => {
     return (
       <Box sx={pageStyleFixed}>
         <Box sx={contentContainerStyle}>
-          {/* Logo */}
+          {/* Logotipo */}
           <Logo size={180} />
 
           <Typography variant="h5" sx={{ color: '#374151', lineHeight: 1.3, mb: 6, fontWeight: 500 }}>
             Join in to explore<br />Madeira at it's best!
           </Typography>
 
-          {/* Guide Option */}
+          {/* Opção de Guia */}
           <Box sx={{ mb: 6 }}>
             <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.5, color: '#374151' }}>
               Become a Guide. Lead tours,<br />share local knowledge, and earn!
@@ -302,7 +302,7 @@ const AuthForm = () => {
             </Button>
           </Box>
 
-          {/* Traveler Option */}
+          {/* Opção de Viajante */}
           <Box sx={{ mb: 8 }}>
             <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.5, color: '#374151' }}>
               Join as a traveler. Book authentic<br />experiences and explore like a local!
@@ -337,7 +337,7 @@ const AuthForm = () => {
             </Button>
           </Box>
 
-          {/* Login Link */}
+          {/* Link de Login */}
           <Typography variant="body2" sx={{ color: '#6b7280' }}>
             Already a member?{' '}
             <Button
@@ -370,7 +370,7 @@ const AuthForm = () => {
   if (currentView === 'login') {
     return (
       <Box sx={pageStyleScrollable}>
-        {/* Back Button fixo */}
+  {/* Botão de voltar fixo */}
         <Box sx={{ position: 'fixed', top: 20, left: 20, zIndex: 2001 }}>
           <IconButton onClick={handleBack} sx={{ color: '#6b7280' }}>
             <ArrowBackIcon sx={{ fontSize: 30 }} />
@@ -378,14 +378,14 @@ const AuthForm = () => {
         </Box>
 
         <Box sx={contentContainerStyle}>
-          {/* Logo */}
+          {/* Logotipo */}
           <Logo size={150} />
 
           <Typography variant="h5" sx={{ color: '#374151', lineHeight: 1.3, mb: 6, fontWeight: 500 }}>
             Guided by locals.<br />Driven by adventure!
           </Typography>
 
-          {/* Form */}
+          {/* Formulário */}
           <form onSubmit={handleSubmit}>
             {error && (
               <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
@@ -501,7 +501,7 @@ const AuthForm = () => {
   if (currentView === 'register-guide') {
     return (
       <Box sx={pageStyleScrollable}>
-        {/* Back Button fixo */}
+  {/* Botão de voltar fixo */}
         <Box sx={{ position: 'fixed', top: 20, left: 20, zIndex: 2001 }}>
           <IconButton onClick={handleBack} sx={{ color: '#6b7280' }}>
             <ArrowBackIcon sx={{ fontSize: 30 }} />
@@ -509,7 +509,7 @@ const AuthForm = () => {
         </Box>
 
         <Box sx={contentContainerStyle}>
-          {/* Logo */}
+          {/* Logotipo */}
           <Logo size={120} />
 
           <Typography variant="h6" sx={{ color: '#374151', fontWeight: 600, mb: 1 }}>
@@ -526,7 +526,7 @@ const AuthForm = () => {
             </Typography>
           )}
 
-          {/* Form */}
+          {/* Formulário */}
           <form onSubmit={handleSubmit}>
             {error && (
               <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>
@@ -812,7 +812,7 @@ const AuthForm = () => {
   if (currentView === 'register-traveler') {
     return (
       <Box sx={pageStyleScrollable}>
-        {/* Back Button fixo */}
+  {/* Botão de voltar fixo */}
         <Box sx={{ position: 'fixed', top: 20, left: 20, zIndex: 2001 }}>
           <IconButton onClick={handleBack} sx={{ color: '#6b7280' }}>
             <ArrowBackIcon sx={{ fontSize: 30 }} />
@@ -820,14 +820,14 @@ const AuthForm = () => {
         </Box>
 
         <Box sx={contentContainerStyle}>
-          {/* Logo */}
+          {/* Logotipo */}
           <Logo size={120} />
 
           <Typography variant="h6" sx={{ color: '#374151', fontWeight: 600, mb: 6 }}>
             Authentic Journeys start here!
           </Typography>
 
-          {/* Form */}
+          {/* Formulário */}
           <form onSubmit={handleSubmit}>
             {error && (
               <Alert severity="error" sx={{ mb: 3, textAlign: 'left' }}>

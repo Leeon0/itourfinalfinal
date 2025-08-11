@@ -96,7 +96,7 @@ const LocationSearch = ({ onLocationSelect, placeholder = "Ex: Funchal, Porto Sa
         },}}
       />
       
-      {/* Lista de sugestões */}
+  {/* Lista de sugestões */}
       {showSuggestions && suggestions.length > 0 && (
         <SuggestionsContainer elevation={2}>
           <List dense>

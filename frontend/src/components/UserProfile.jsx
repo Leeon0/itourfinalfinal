@@ -87,13 +87,13 @@ const UserProfile = ({ onClose }) => {
       }
 
       await updateUserProfile(updateData);
-      setSuccess('Perfil atualizado com sucesso!');
+  setSuccess('Profile updated successfully!');
       setIsEditing(false);
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      console.error('Erro ao atualizar perfil:', error);
-      setError('Erro ao atualizar perfil: ' + error.message);
+      console.error('Error updating profile:', error);
+      setError('Error updating profile: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -158,7 +158,7 @@ const UserProfile = ({ onClose }) => {
 
       <Card elevation={0} sx={{ mb: 3, backgroundColor: 'transparent', width: '100%'}}>
         <CardContent sx={{ padding: 0 }}>
-          {/* Header do perfil */}
+          {/* Cabeçalho do perfil */}
           <Box sx={{ mb: 3, mt: 3 }}>
             {isEditing ? (
               <Box>
@@ -166,7 +166,7 @@ const UserProfile = ({ onClose }) => {
                 <Box sx={{ textAlign: 'center', mb: 3 }}>
                   <ImageUpload
                     value={editData.profileImage}
-                    onChange={(file) => setEditData({...editData, profileImage: file})} //onChange={(base64) => handleChange('profileImage', base64)}
+                    onChange={(file) => setEditData({...editData, profileImage: file})} // onChange: atualizar imagem de perfil
                     label="Profile Picture"
                     circular
                   />
@@ -216,7 +216,7 @@ const UserProfile = ({ onClose }) => {
                       overflowWrap: 'break-word'
                     }}
                   >
-                    {user?.name || 'Nome não definido'}
+                    {user?.name || 'Name not defined'}
                   </Typography>
                   
                   <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
@@ -498,7 +498,7 @@ const UserProfile = ({ onClose }) => {
         </CardContent>
       </Card>
 
-      {/* Botões de ação */}
+  {/* Botões de ação */}
       
       {isEditing ? (
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>

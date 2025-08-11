@@ -182,35 +182,35 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
   const [reservedHours, setReservedHours] = useState([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
 
-  // Parse route duration to get the number of hours
-  const durationHours = parseInt(route.duration, 10) || 1; // Fallback to 1 if duration is invalid
+  // Analisar a duração da rota para obter o número de horas
+  const durationHours = parseInt(route.duration, 10) || 1; // Valor padrão 1 se duração inválida
 
-  // Buscar reservas existentes para esta rota
+  // Procurar reservas existentes para esta rota
   const fetchRouteReservations = async () => {
     try {
       setLoadingReservations(true);
       const allReservations = await getAllReservations();
       
-      // Filtrar apenas reservas confirmadas ou pendentes para esta rota
+  // Filtrar apenas reservas confirmadas ou pendentes para esta rota
       const routeReservations = allReservations.filter(reservation => 
         reservation.routeId === route.id && 
         (reservation.status === 'confirmed' || reservation.status === 'pending')
       );
 
-      // Criar lista de datas ocupadas e horas por data
+  // Criar lista de datas ocupadas e horas por data
       const occupied = [];
       const hoursByDate = {};
 
       routeReservations.forEach(reservation => {
         const date = reservation.selectedDate;
         
-        // Adicionar às horas ocupadas por data
+  // Adicionar às horas ocupadas por data
         if (!hoursByDate[date]) {
           hoursByDate[date] = [];
         }
         hoursByDate[date].push(...reservation.selectedHours);
         
-        // Se todas as horas estão ocupadas, marcar a data como totalmente ocupada
+  // Se todas as horas estiverem ocupadas, marcar a data como totalmente ocupada
         const uniqueHours = [...new Set(hoursByDate[date])];
         if (uniqueHours.length >= allHours.length) {
           occupied.push(date);
@@ -220,7 +220,7 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
       setOccupiedDates(occupied);
       setOccupiedHours(hoursByDate);
       
-      // Se há uma data selecionada, atualizar as horas reservadas
+  // Se houver uma data selecionada, atualizar as horas reservadas
       if (selectedDate) {
         const dateStr = formatDate(selectedDate);
         setReservedHours(hoursByDate[dateStr] || []);
@@ -276,10 +276,10 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    setSelectedStartHour(''); // ✅ Reset apenas a hora de início
+  setSelectedStartHour(''); // ✅ Reset apenas a hora de início
     setError('');
     
-    // Atualizar horas reservadas para a nova data
+  // Atualizar horas reservadas para a nova data
     const dateStr = formatDate(date);
     setReservedHours(occupiedHours[dateStr] || []);
   };
@@ -288,12 +288,12 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
   const isStartHourAvailable = (startHour) => {
     const startIndex = allHours.indexOf(startHour);
     
-    // Verificar se há horas suficientes disponíveis consecutivas
+  // Verificar se há horas suficientes disponíveis consecutivas
     for (let i = 0; i < durationHours; i++) {
       const hourIndex = startIndex + i;
       const hour = allHours[hourIndex];
       
-      // Se não existe a hora ou está reservada, não é válida
+  // Se não existir a hora ou estiver reservada, não é válida
       if (!hour || reservedHours.includes(hour)) {
         return false;
       }
@@ -338,26 +338,26 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
     setError('');
 
     try {
-      // Verificar disponibilidade antes de fazer a reserva
+  // Verificar disponibilidade antes de fazer a reserva
       await fetchRouteReservations();
       
-      // Verificar se a hora de início ainda está disponível
+  // Verificar se a hora de início ainda está disponível
       if (!isStartHourAvailable(selectedStartHour)) {
         setError(`Sorry, ${selectedStartHour} is no longer available. Please select a different time.`);
         setSelectedStartHour('');
         return;
       }
 
-      // ✅ Obter todas as horas que serão ocupadas
+  // ✅ Obter todas as horas que serão ocupadas
       const hoursToReserve = getOccupiedHours(selectedStartHour);
       
       await addReservation(route, formatDate(selectedDate), hoursToReserve);
       
-      // Success feedback
+  // Feedback de sucesso
       const endTime = allHours[allHours.indexOf(selectedStartHour) + durationHours - 1];
       alert(`Reservation confirmed!\nRoute: ${route.name}\nDate: ${formatDate(selectedDate)}\nTime: ${selectedStartHour} - ${endTime}\nDuration: ${durationHours} hour(s)`);
       
-      // Reset and close
+  // Resetar e fechar
       setSelectedDate(null);
       setSelectedStartHour('');
       setShowPanel(false);
@@ -430,12 +430,12 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
           )}
 
           <Box>
-            {/* Route Name */}
+            {/* Nome da Rota */}
             <Typography variant="h6" sx={{ mb: 1 }}>
               {route.name}
             </Typography>
 
-            {/* Route Image */}
+            {/* Imagem da Rota */}
             {route.routeImageBase64 && (
               <Box
                 component="img"
@@ -451,7 +451,7 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
               />
             )}
 
-            {/* Route Locations */}
+            {/* Locais da Rota */}
             {route.locations && route.locations.length > 0 && (
               <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <Box sx={{ maxHeight: '120px', overflow: 'hidden', pr: 1 }}>
@@ -514,7 +514,7 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
             Select a date:
           </Typography>
 
-          {/* Calendar Component */}
+          {/* Componente de Calendário */}
           <Calendar 
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
