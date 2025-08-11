@@ -34,7 +34,7 @@ import { useReservations } from '../context/ReservationsContext';
 
 const RoutesList = ({ onClose, onCreateRoute, onReserve }) => {
   const { routes, activeRoute, selectRoute, deleteRoute, clearActiveRoute, loading } = useRoutes();
-  const { isGuide, userProfile } = useAuth();
+  const { isGuide, user, userProfile } = useAuth();
   const { addReservation, reservations } = useReservations();
 
   const [sortType, setSortType] = useState('date');
@@ -303,12 +303,14 @@ const RoutesList = ({ onClose, onCreateRoute, onReserve }) => {
                                   Created by:
                                 </Typography>
                                 {route.createdByProfileImage ? (
-                                  <Avatar src={route.createdByProfileImage} sx={{ width: 19, height: 19 }} />
+                                  <Avatar 
+                                    src= {`http://localhost:8000/${route.createdByProfileImage}`}
+                                    sx={{ width: 19, height: 19 }} />
                                 ) : (
                                   <PersonIcon fontSize="small" color="action" />
                                 )}
                                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                                  {route.createdBy === userProfile?.uid ? 'me' : route.createdByName}
+                                  {route.createdBy === user?.id ? 'Me' : route.createdByName}
                                 </Typography>
                               </Box>
                             )}
