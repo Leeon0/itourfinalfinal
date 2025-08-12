@@ -27,8 +27,8 @@ app.use(cors({
 // Create a connection to the MySQL database
 const db = mysql.createConnection({
     host: "localhost", // Database host
-    user: "root",      // Database username
-    password: "", // Database password
+    user: "danialves",      // Database username
+    password: "AcinAcademy2025", // Database password
     database: "itourdb" // Name of the database
 });
 
@@ -81,6 +81,7 @@ app.post('/login', (req, res) => {
         email,
         password, 
         type, 
+        tutorialCompleted,
         u.created_at, 
         profile_image, 
         c.id AS car_id, 
@@ -145,8 +146,8 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
         // Insert user
         await db.promise().query(
             `INSERT INTO users 
-                (name, email, type, password, created_at, profile_image) 
-                VALUES (?, ?, ?, ?, ?, ?)`,
+                (name, email, type, password, created_at, profile_image, tutorialCompleted) 
+                VALUES (?, ?, ?, ?, ?, ?, 0)`,
             [name, email, type, hash, created_at, profile_image]
         );
 
@@ -195,7 +196,6 @@ app.post('/register', upload.single('profileImage'), async (req, res) => {
             ...userRow[0],
             ...(carRow[0] ? carRow[0] : {})
         };
-        
         res.status(200).json({ message: 'User registered successfully', userWithCar });
     } catch (error) {
         console.error('Registration error:', error);
@@ -273,6 +273,18 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
   }
 }) 
 
+app.put('/tutorial/:userId', async (req,res) => {
+  const { userId } = req.params;
+  try {
+    db.query(`UPDATE users SET tutorialCompleted = 1 WHERE id = ?`,
+      [userId]
+    )
+    res.status(200).json({ message: 'Tutorial completed successfully' });
+  } catch {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+})
+
 
 /********************************/
 /**                            **/
@@ -280,8 +292,7 @@ app.put('/users/:userID', upload.single('profileImage'), async (req, res) => {
 /**                            **/
 /********************************/
 
-// Fetch All Tours
-
+// Fetch Places visited by a Tour
 app.get('/routes/:routeId/places', async (req, res) => {
   const { routeId } = req.params;
   try {
@@ -367,15 +378,15 @@ app.post('/routes', upload.single('routeImage'), async (req, res) => {
   /*const h = req.body.duration[0];
   const ms = new Date().setHours(h);
   const duration = new Date(ms)*/
-  const duration = req.body.duration;
+  const duration = req.body.duration + ":00:00";
   const locations = req.body.locations ? JSON.parse(req.body.locations) : [];
   const createdBy = req.body.createdBy;
   const createdAt = new Date();
 
   if (req.file) {
     route_image = `uploads/${req.file.filename}`;
-  } else if (req.body.routeImageBase64) {
-    route_image = req.body.routeImageBase64;
+  } else {
+    route_image = null;
   }
 
   try {
@@ -873,7 +884,7 @@ app.get('/reservations', async (req, res) => {
   }
 });
 
-// Cancelar reserva manualmente (ex: por parte do guia)
+// 📌 Cancelar reserva manualmente (ex: por parte do guia)
 app.put('/reservations/:id/cancel', async (req, res) => {
   const { id } = req.params;
   const cancelledAt = new Date();
