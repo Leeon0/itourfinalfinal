@@ -85,8 +85,8 @@ export const AuthProvider = ({ children }) => {
       console.log(formDataToSend);
       const res = await axios.post('http://localhost:8000/register', formDataToSend);
       
-      setUser(res.data.user);
-      setUserProfile(res.data.user.profile_image ?? null);
+      setUser(res.data.userWithCar);
+      setUserProfile(res.data.userWithCar.profile_image ?? null);
       return res.data;
     } catch (err) {
       console.error('Erro no signUp:', err);
@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }) => {
       const formData = new FormData();
       formData.append('id', updateData.id);
       formData.append('name', updateData.name);
-      formData.append('profileImage', updateData.profileImage); // ✅ File object
+      formData.append('profileImage', updateData.profileImage); 
 
       // Flatten vehicleData
       if (updateData.vehicleData) {
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
         formData.append('seatingCapacity', updateData.vehicleData.seatingCapacity);
         formData.append('additionalInfo', updateData.vehicleData.additionalInfo);
       }
-      console.log('Dados a enviar para o backend update!!', formData)
+      
       const res = await axios.put(`http://localhost:8000/users/${userId}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
