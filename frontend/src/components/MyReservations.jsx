@@ -1,610 +1,420 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  CircularProgress,
-  Avatar,
-  Card,
-  CardContent,
-  Grid,
-  Divider,
-  Slide,
-  Chip,
-  IconButton,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Rating
-} from '@mui/material';
-import {
-  Cancel as CancelIcon,
-  Event as EventIcon,
-  Schedule as ScheduleIcon,
-  Person as PersonIcon,
-  Image as ImageIcon,
-  Close as CloseIcon
-} from '@mui/icons-material';
-import { SidePanel } from '../styles/StyledComponents';
-import { useReservations } from '../context/ReservationsContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
+import L from "leaflet";
+import { Route as RouteIcon } from '@mui/icons-material';
+import { MADEIRA_CENTER, MADEIRA_BOUNDS } from '../utils/constants';
+import { calculateRoute } from '../utils/mapUtils';
+import { useRoutes } from '../context/RoutesContext';
+import TourGuide from './TourGuide';
 import { useAuth } from '../context/AuthContext';
 
-const MyReservations = ({ onClose }) => {
-  const { reservations, loading, cancelReservation, deleteReservation, submitRating } = useReservations();
-  const { isGuide } = useAuth();
-  const [showPanel, setShowPanel] = useState(true);
-  const [deletingIds, setDeletingIds] = useState(new Set());
-  const [ratingDialog, setRatingDialog] = useState({ open: false, reservation: null });
-  const [ratingValue, setRatingValue] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [actioningIds, setActioningIds] = useState(new Set());
-  const [errorMessage, setErrorMessage] = useState('');
-  const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null, reservationId: null, routeName: '' });
+const customIcon = new L.Icon({
+  iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJDOC4xMyAyIDUgNS4xMyA1IDlDNSAxNC4yNSAxMiAyMiAxMiAyMkMxMiAyMiAxOSAxNC4yNSAxOSA5QzE5IDUuMTMgMTUuODcgMiAxMiAyWk0xMiAxMS41QzEwLjYyIDExLjUgOS41IDEwLjM4IDkuNSA5QzkuNSA3LjYyIDEwLjYyIDYuNSAxMiA2LjVDMTMuMzggNi41IDE0LjUgNy42MiAxNC41IDlDMTQuNSAxMC4zOCAxMy4zOCAxMS41IDEyIDExLjVaIiBmaWxsPSIjMDAwMDAwIi8+Cjwvc3ZnPgo=',
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+  shadowAnchor: [12, 41]
+});
+
+const baseIcon = new L.Icon({
+  iconUrl: '/MarcadorRoute.png', 
+  iconSize: [50, 50],
+  iconAnchor: [25, 40],
+  popupAnchor: [0, -40],
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  shadowSize: [41, 41],
+  shadowAnchor: [12, 41]
+});
+
+const MapComponent = ({ onOpenRoutesList }) => {
+  const { routes, activeRoute, selectRoute, clearActiveRoute } = useRoutes();
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const { isGuide, user } = useAuth();
+  const [isNewUser] = useState(true);
+
+  useEffect(() => {
+    if (activeRoute && activeRoute.locations.length > 1) {
+      const calculateActiveRoute = async () => {
+        const coords = await calculateRoute(activeRoute.locations.map(loc => loc.position));
+        setRouteCoordinates(coords);
+      };
+      calculateActiveRoute();
+    } else {
+      setRouteCoordinates([]);
+    }
+  }, [activeRoute]);
+
   
+  // ✅ MEMOIZAR OPTIONS DO POPUP
+  const customPopupOptions = useMemo(() => ({
+    maxWidth: 250,
+    width: 200,
+    className: 'custom-popup-yellow'
+  }), []);
 
-  // Handle guide access restriction
-  if (isGuide()) {
-    return (
-      <Slide in={showPanel} direction="down" timeout={700} mountOnEnter unmountOnExit onExited={onClose}>
-        <SidePanel elevation={2} sx={{ height: '90vh', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 4 }}>
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" color="error" gutterBottom>
-              Access Denied
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Only tourists can view reservations.
-            </Typography>
-            <Button onClick={() => setShowPanel(false)} variant="contained" sx={{ backgroundColor: '#FFC107', color: '#333' }}>
-              Close
-            </Button>
-          </Box>
-        </SidePanel>
-      </Slide>
-    );
-  }
+  // ✅ MEMOIZAR FUNÇÃO DE CLICK
+  const handleBaseClick = useCallback((route) => {
+    console.log('🎯 Base click:', route.name, route.id);
+    
+    if (activeRoute?.id === route.id) {
+      console.log('🔄 Clearing active route');
+      clearActiveRoute();
+    } else {
+      console.log('🎯 Selecting route:', route.name);
+      selectRoute(route);
+      
+      if (onOpenRoutesList) {
+        setTimeout(() => {
+          onOpenRoutesList();
+        }, 100);
+      }
+    }
+  }, [activeRoute?.id, clearActiveRoute, selectRoute, onOpenRoutesList]);
 
-  // Filter reservations to show only confirmed or cancelled
-  let filteredReservations = [];
-  
-  if (reservations) {
-    filteredReservations = reservations.results.filter(reservation => 
-      reservation.status === 'confirmed' || reservation.status === 'cancelled'
-    );
-  }
-  
-
-  const handleCancel = () => {
-    setShowPanel(false);
-  };
-
-  const handleDeleteReservation = async (reservationId, routeName) => {
-    if (!window.confirm(`Are you sure you want to permanently delete the reservation for "${routeName}"? This action cannot be undone.`)) {
-      return;
+  // ✅ CALCULAR BASES ÚNICAS COM DESLOCAMENTO ANTI-SOBREPOSIÇÃO
+  const uniqueBases = useMemo(() => {
+    console.log('🔍 Calculando bases únicas com anti-sobreposição para', routes.length, 'rotas');
+    
+    if (!routes || routes.length === 0) {
+      console.log('⚠️ Nenhuma rota encontrada');
+      return [];
     }
 
-    setDeletingIds(prev => new Set([...prev, reservationId]));
-    try {
-      await deleteReservation(reservationId);
-    } catch (error) {
-      console.error('Error deleting reservation:', error);
-      alert('Error deleting reservation: ' + error.message);
-    } finally {
-      setDeletingIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(reservationId);
-        return newSet;
+    const bases = [];
+    const usedPositions = [];
+
+    routes.forEach(route => {
+      // ✅ Verificar se a rota tem baseLocation válida
+      if (!route.baseLocation || !route.baseLocation.position) {
+        console.warn('⚠️ Rota sem baseLocation válida:', route.name, route.id);
+        return;
+      }
+
+      const [lat, lng] = route.baseLocation.position;
+      
+      // ✅ Validar coordenadas
+      if (typeof lat !== 'number' || typeof lng !== 'number' || isNaN(lat) || isNaN(lng)) {
+        console.warn('⚠️ Coordenadas inválidas para rota:', route.name, { lat, lng });
+        return;
+      }
+
+      // ✅ CALCULAR POSIÇÃO SEM SOBREPOSIÇÃO
+      const adjustedPosition = calculateOffset(usedPositions, [lat, lng]);
+      usedPositions.push(adjustedPosition);
+
+      bases.push({
+        ...route,
+        baseLocation: {
+          ...route.baseLocation,
+          position: adjustedPosition,
+          originalPosition: [lat, lng] // ✅ Manter posição original para referência
+        }
       });
-    }
-  };
+      
+      console.log(`✅ Base adicionada: ${route.name} em [${adjustedPosition[0].toFixed(4)}, ${adjustedPosition[1].toFixed(4)}]`);
+    });
 
-  const handleConfirmAction = async () => {
-    const { action, reservationId } = confirmDialog;
-    if (action === 'cancel') {
-      setActioningIds(prev => new Set([...prev, reservationId]));
-      try {
-        await cancelReservation(reservationId);
-        setSuccessMessage('Reservation cancelled successfully!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (error) {
-        setErrorMessage(`Error cancelling reservation: ${error.message}`);
-        setTimeout(() => setErrorMessage(''), 3000);
-      } finally {
-        setActioningIds(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(reservationId);
-          return newSet;
-        });
-      }
-    }
-    handleCloseConfirmDialog();
-  };
-
-  const handleOpenConfirmDialog = (action, reservationId, routeName = '') => {
-    setConfirmDialog({ open: true, action, reservationId, routeName });
-  };
-
-  const handleCloseConfirmDialog = () => {
-    setConfirmDialog({ open: false, action: null, reservationId: null, routeName: '' });
-  };
-
-  const handleCancelReservation = (reservationId) => {
-    handleOpenConfirmDialog('cancel', reservationId);
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'confirmed': return 'success';
-      case 'cancelled': return 'error';
-      case 'pending': 
-      default: return 'warning';
-    }
-  };
-
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case 'confirmed': return 'Confirmed';
-      case 'cancelled': return 'Cancelled';
-      case 'pending': 
-      default: return 'Pending';
-    }
-  };
-
-  const formatTimeSlot = (selectedHours, totalHours) => {
-  if (!selectedHours || selectedHours.length === 0) return 'Time not specified';
-  
-  const startHour = selectedHours.split(':')[0];
-  const startMin = selectedHours.split(':')[1];
-  const duration = parseInt(totalHours.split(':')[0]);
-  return `${startHour}:${startMin} (${duration}h)`;
-};
-
-  // Format date in WEST (Europe/Lisbon) time zone
-  /*const formatDate = (dateString) => {
-    const [year, month, day] = dateString.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('en-GB', { timeZone: 'Europe/Lisbon' });
-  };*/
-
-  // Format createdAt date
-  const formatDate = (createdAt) => {
-    if (!createdAt) return 'Date not available';
-    const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt);
-    return date.toLocaleDateString('en-GB', { timeZone: 'Europe/Lisbon' });
-  };
-
-  const handleRatingSubmit = async () => {
-    if (ratingValue) {
-      try {
-        await submitRating(ratingDialog.reservation.id, ratingValue);
-        setRatingDialog({ open: false, reservation: null });
-        setRatingValue(null);
-        setSuccessMessage('Thank you for your feedback!');
-        setTimeout(() => setSuccessMessage(''), 3000);
-      } catch (error) {
-        setErrorMessage('Failed to submit rating. Please try again.');
-        setTimeout(() => setErrorMessage(''), 3000);
-      }
-    }
-  };
-
-  const handleRatingClose = () => {
-    setRatingDialog({ open: false, reservation: null });
-    setRatingValue(null);
-  };
+    console.log('📍 Total de bases únicas processadas:', bases.length);
+    return bases;
+  }, [routes]);
 
   return (
-    <Slide in={showPanel} direction="down" timeout={700} mountOnEnter unmountOnExit onExited={onClose}>
-      <SidePanel elevation={2} sx={{ height: '90vh', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: 4 }}>
-        <Box sx={{
-          flex: 1,
-          overflow: 'auto',
-          paddingBottom: '60px',
-          scrollbarWidth: 'none',
-          '&::-webkit-scrollbar': {
-            display: 'none', 
-          },
-        }}>
-          <Typography variant="h5" textAlign="center" sx={{ my: 3 }}>
-            My Reservations
-          </Typography>
+    <>
+      <TourGuide 
+        userType={user?.type}
+        isNewUser={isNewUser}
+        onTourComplete={() => console.log('Tutorial completed')}
+      />
 
-          {successMessage && (
-            <Alert severity="success" sx={{ mt: 2, mx: 2 }}>
-              {successMessage}
-            </Alert>
-          )}
-          {errorMessage && (
-            <Alert severity="error" sx={{ mt: 2, mx: 2 }}>
-              {errorMessage}
-            </Alert>
-          )}
+      {/* CSS personalizado para popup */}
+      <style>{`
+        .custom-popup-yellow .leaflet-popup-content-wrapper {
+          background: linear-gradient(to top, #F4E6B0, #EEEEEE) !important;
+          color: #333 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+          padding: 0 !important;
+        }
+        
+        .custom-popup-yellow .leaflet-popup-tip {
+          background: #F4E6B0 !important;
+          border-top: none !important;
+          border-left: none !important;
+        }
+        
+        .custom-popup-yellow .leaflet-popup-content {
+          margin: 0 !important;
+          padding: 16px !important;
+          font-family: 'Roboto', sans-serif !important;
+        }
+        
+        .custom-popup-yellow .leaflet-popup-close-button {
+          color: #333 !important;
+          font-size: 20px !important;
+          font-weight: bold !important;
+          right: 8px !important;
+          top: 8px !important;
+        }
+        
+        .custom-popup-yellow .leaflet-popup-close-button:hover {
+          color: #000 !important;
+        }
+      `}</style>
 
-          {loading ? (
-            <Box display="flex" justifyContent="center" py={4}>
-              <CircularProgress sx={{ color: '#FFC107' }} />
-            </Box>
-          ) : filteredReservations.length === 0 ? (
-            <Box textAlign="center" py={4}>
-              <EventIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="body1" color="text.secondary" fontWeight="medium">
-                No reservations found
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                All your reservations are automatically confirmed when booked!
-              </Typography>
-            </Box>
-          ) : (
-            <Box sx={{ px: 2 }}>
-              <Typography variant="body1" fontWeight="medium" textAlign="center" sx={{ mb: 2, borderBottom: '1px solid #FFC107', pb: 1 }}>
-                {filteredReservations.length} reservation{filteredReservations.length !== 1 ? 's' : ''} found:
-              </Typography>
+      <MapContainer 
+        center={MADEIRA_CENTER} 
+        zoom={10} 
+        style={{ height: '100%', width: '100%' }}
+        maxBounds={MADEIRA_BOUNDS}
+        maxBoundsViscosity={1.0}
+        minZoom={9}
+        maxZoom={18}
+        zoomControl={false}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        
+        {/* Linha da rota ativa */}
+        {routeCoordinates.length > 1 && (
+          <Polyline 
+            positions={routeCoordinates} 
+            color={activeRoute?.color || "red"} 
+            weight={4}
+            opacity={0.8}
+          />
+        )}
 
-              <Grid container direction="column" alignItems="center" spacing={2}>
-                {filteredReservations.map((reservation) => (
-                  <Grid item key={reservation.id} sx={{ width: '100%', maxWidth: '400px' }}>
-                    <Card
-                      elevation={0}
-                      sx={{
-                        minHeight: '200px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderRadius: 3,
-                        backgroundColor: 'transparent',
-                        position: 'relative',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-                        }
-                      }}
-                    >
-                      {reservation.status === 'cancelled' && (
-                        <IconButton
-                          onClick={() => handleDeleteReservation(reservation.id, reservation.routeName)}
-                          disabled={deletingIds.has(reservation.id)}
-                          sx={{
-                            position: 'absolute',
-                            top: 8,
-                            right: 8,
-                            zIndex: 1,
-                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                            color: '#f44336',
-                            width: 32,
-                            height: 32,
-                            '&:hover': {
-                              backgroundColor: '#f44336',
-                              color: 'white',
-                            },
-                            '&:disabled': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                              color: 'rgba(0, 0, 0, 0.3)',
-                            }
-                          }}
-                        >
-                          {deletingIds.has(reservation.id) ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : (
-                            <CloseIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      )}
+        {/* ✅ BASES DE ROTAS COM POSIÇÕES AJUSTADAS */}
+        {!activeRoute && uniqueBases.map((route, index) => {
+          // ✅ Validação extra antes de renderizar
+          if (!route.baseLocation?.position || route.baseLocation.position.length !== 2) {
+            console.warn('⚠️ Pulando rota com baseLocation inválida:', route.name);
+            return null;
+          }
 
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        {/* Route Name */}
-                        <Typography 
-                          variant="h6" 
-                          fontWeight="bold" 
-                          sx={{ 
-                            mb: 2,
-                            fontSize: '1.1rem',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textAlign: 'left',
-                            textOverflow: 'ellipsis'
-                          }}
-                        >
-                          {reservation.routeName}
-                        </Typography>
+          const [lat, lng] = route.baseLocation.position;
+          
+          // ✅ Verificação final de coordenadas
+          if (isNaN(lat) || isNaN(lng)) {
+            console.warn('⚠️ Coordenadas NaN para rota:', route.name);
+            return null;
+          }
 
-                        {/* Route Image */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                          {reservation.routeImage ? (
-                            <Avatar 
-                              src= {`http://localhost:8000/${reservation.routeImage}`}
-                              sx={{ 
-                                width: 300, 
-                                height: 150, 
-                                borderRadius: 2,
-                                boxShadow: 1
-                              }}
-                              variant="rounded"
-                            />
-                          ) : (
-                            <Avatar 
-                              sx={{ 
-                                width: 80, 
-                                height: 80, 
-                                borderRadius: 2,
-                                bgcolor: 'grey.200',
-                                boxShadow: 1
-                              }}
-                              variant="rounded"
-                            >
-                              <ImageIcon color="disabled" />
-                            </Avatar>
-                          )}
-                        </Box>
-
-                        {/* Guide and Date (Left), Duration (Right) */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                          <Box>
-                            {reservation.guideName && (
-                              <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
-                                <PersonIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
-                                <Typography 
-                                  variant="body2" 
-                                  color="text.secondary"
-                                  sx={{ fontSize: '0.85rem' }}
-                                >
-                                  Guide: {reservation.guideName}
-                                </Typography>
-                              </Box>
-                            )}
-                            <Box display="flex" alignItems="center">
-                              <EventIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
-                              <Typography 
-                                variant="body2" 
-                                color="text.secondary"
-                                sx={{ fontSize: '0.85rem' }}
-                              >
-                                {formatDate(reservation.selectedDate)}
-                              </Typography>
-                            </Box>
-                          </Box>
-                          <Box display="flex" alignItems="right">
-                            <ScheduleIcon fontSize="small" color="action" sx={{ mr: 0.5 }} />
-                            <Typography 
-                              variant="body2" 
-                              color="text.secondary"
-                              sx={{ fontSize: '0.85rem' }}
-                            >
-                              {formatTimeSlot(reservation.selectedHours, reservation.totalHours)}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        {/* Status and Rating/Delete Buttons */}
-                        <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mt: 2, mb: 2 }}>
-                          <Chip 
-                            label= {getStatusLabel(reservation.status)}
-                            size="small"
-                            color= {getStatusColor(reservation.status)}
-                            sx={{ fontWeight: 'medium' }}
-                          />
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            {!reservation.rating && (
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                sx={{
-                                  borderRadius: '12px',
-                                  textTransform: 'none',
-                                  bgcolor: '#FFC107',
-                                  color: '#333',
-                                  fontSize: '0.80rem',
-                                  padding: '6px 8px',
-                                  minWidth: '80px',
-                                  '&:hover': { bgcolor: '#FFB300' },
-                                  '&:focus': {
-                                    borderColor: 'yellow',
-                                    boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
-                                  },
-                                }}
-                                onClick={() => setRatingDialog({ open: true, reservation })}
-                              >
-                                Rate Guide
-                              </Button>
-                            )}
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() => handleCancelReservation(reservation.id)}
-                              disabled={actioningIds.has(reservation.id)}
-                              startIcon={actioningIds.has(reservation.id) ? 
-                                <CircularProgress size={14} color="inherit" /> : 
-                                <CancelIcon sx={{ fontSize: '14px' }} />
-                              }
-                              sx={{ 
-                                textTransform: 'none', 
-                                borderRadius: '12px',
-                                fontSize: '0.75rem',
-                                padding: '4px 8px',
-                                minWidth: '70px',
-                                '&:focus': {
-                                  borderColor: 'yellow',
-                                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
-                                },
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </Box>
-                        </Box>
-
-                        {/* Booked On */}
-                        <Typography 
-                          variant="caption" 
-                          color="text.secondary" 
-                          sx={{ 
-                            fontSize: '0.75rem',
-                            display: 'block',
-                            mt: 1,
-                            textAlign: 'center',
-                            bottom:0
-                          }}
-                        >
-                          Booked on {formatDate(reservation.createdAt)}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                    <Divider sx={{ my: 2, borderColor: '#FFC107' }} />
-                  </Grid>
-                ))}
-              </Grid>
-
-              {filteredReservations.length > 0 && (
-                <Alert 
-                  severity="info" 
-                  sx={{ 
-                    mt: 3, 
-                    mx: 2,
-                    backgroundColor: '#FFF8E1',
-                    border: '1px solid #FFC107',
-                    borderRadius: 2,
-                    '& .MuiAlert-icon': {
-                      color: '#FF8F00'
-                    },
-                    '& .MuiAlert-message': {
-                      color: '#333'
-                    }
-                  }}
-                >
-                  All your reservations are automatically confirmed when booked. You can delete cancelled reservations using the ✕ button.
-                </Alert>
-              )}
-            </Box>
-          )}
-        </Box>
-
-        <Button 
-          onClick={handleCancel}
-          fullWidth
-          sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'transparent',
-            backdropFilter: 'blur(5px)',
-            borderTop: '1px solid #FFC107',
-            p: 2,
-            color: '#f44336',
-            fontWeight: 600,
-            borderRadius: 0,
-            '&:hover': {
-              backgroundColor: '#f44336',
-              color: 'white',
-            }
-          }}
-        >
-          Close
-        </Button>
-
-        <Dialog
-          open={ratingDialog.open}
-          onClose={handleRatingClose}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{
-            sx: {
-              background: 'linear-gradient(to top, #F4E6B0, #EEEEEE)',
-              color: '#333',
-              borderRadius: 2,
-              border: '2px solid #FFC107',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-            }
-          }}
-        >
-        <DialogTitle sx={{ fontWeight: 'bold' }}>Rate Your Guide</DialogTitle>
-          <DialogContent>
-            <Typography variant="body1" gutterBottom>
-              How was your experience with {ratingDialog.reservation?.guideName} for {ratingDialog.reservation?.routeName}?
-            </Typography>
-            <Box display="flex" justifyContent="center" my={2}>
-              <Rating
-                name="guide-rating"
-                value={ratingValue}
-                onChange={(event, newValue) => setRatingValue(newValue)}
-                precision={1}
-                size="large"
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={handleRatingSubmit}
-              variant="contained"
-              sx={{ 
-                backgroundColor: '#FFC107', 
-                color: '#333',
-                '&:focus': {
-                  borderColor: 'yellow',
-                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
-                },
-              }}
-              disabled={!ratingValue}
-            >
-              Submit
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        <Dialog
-          open={confirmDialog.open}
-          onClose={handleCloseConfirmDialog}
-          maxWidth="xs"
-          fullWidth
-          PaperProps={{
-            sx: {
-              background: '#FFF8E1',
-              color: '#333',
-              borderRadius: 2,
-              border: '2px solid #FFC107',
-              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-            }
-          }}
-        >
-          <DialogTitle sx={{ fontWeight: 'bold' }}>
-            Cancel Reservation
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body1">
-              Are you sure you want to cancel this reservation?
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseConfirmDialog} color="error">
-              Back
-            </Button>
-            <Button
-              onClick={handleConfirmAction}
-              variant="outlined"
-              sx={{
-                borderRadius: '12px',
-                textTransform: 'none',
-                bgcolor: '#FFC107',
-                color: '#333',
-                fontSize: '0.80rem',
-                padding: '6px 8px',
-                minWidth: '80px',
-                '&:hover': { bgcolor: '#FFB300' },
-                '&:focus': {
-                  borderColor: 'yellow',
-                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
-                },
+          return (
+            <Marker 
+              key={`base-${route.id}-${lat}-${lng}`}
+              position={[lat, lng]}
+              icon={baseIcon}
+              eventHandlers={{
+                click: () => handleBaseClick(route)
               }}
             >
-              Confirm
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </SidePanel>
-    </Slide>
+              <Popup {...customPopupOptions}>
+                <div style={{textAlign: 'center', minWidth: '180px'}}>
+                  <div style={{
+                    color: '#333',
+                    fontWeight: 'bold',
+                    marginBottom: '8px',
+                    fontSize: '15px'
+                  }}>
+                    🏁 {route.name}
+                  </div>
+                  
+                  <div style={{
+                    color: '#333',
+                    fontWeight: '500',
+                    marginBottom: '12px',
+                    fontSize: '14px'
+                  }}>
+                    {route.baseLocation.name}
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#333',
+                    borderRadius: '6px',
+                    padding: '8px',
+                    marginBottom: '8px'
+                  }}>
+                    <div style={{
+                      color: '#FFC107',
+                      fontSize: '12px',
+                      fontFamily: 'monospace'
+                    }}>
+                      {lat.toFixed(4)}, {lng.toFixed(4)}
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: 'rgba(51, 51, 51, 0.1)',
+                    borderRadius: '6px',
+                    padding: '6px',
+                    border: '1px solid #333',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}>
+                    <span style={{color: '#333', fontSize: '14px'}}>🛣️</span>
+                    <span style={{
+                      color: '#333',
+                      fontSize: '13px',
+                      fontWeight: '500'
+                    }}>
+                      {route.locations?.length || 0} stops • {route.duration}
+                    </span>
+                  </div>
+
+                  <div style={{
+                    marginTop: '8px',
+                    fontSize: '12px',
+                    color: '#666',
+                    fontStyle: 'italic'
+                  }}>
+                    Click to view route details
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
+        
+        {/* LOCALIZAÇÕES DA ROTA ATIVA */}
+        {activeRoute && activeRoute.locations && activeRoute.locations.map((marker, i) => (
+          <Marker 
+            position={marker.position} 
+            key={marker.id || i} 
+            icon={customIcon}
+          >
+            <Popup {...customPopupOptions}>
+              <div style={{textAlign: 'center', minWidth: '180px'}}>
+                <div style={{
+                  color: '#333',
+                  fontWeight: 'bold',
+                  marginBottom: '8px',
+                  fontSize: '15px'
+                }}>
+                  {marker.name}
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#333',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  marginBottom: '8px'
+                }}>
+                  <div style={{
+                    color: '#FFC107',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                  }}>
+                    {marker.position[0].toFixed(4)}, {marker.position[1].toFixed(4)}
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'rgba(51, 51, 51, 0.1)',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  border: '1px solid #333',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}>
+                  <RouteIcon />
+                  <span style={{
+                    color: '#333',
+                    fontSize: '13px',
+                    fontWeight: '500'
+                  }}>
+                    {activeRoute.name}
+                  </span>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* BASE LOCATION DA ROTA ATIVA */}
+        {activeRoute && activeRoute.baseLocation && (
+          <Marker 
+            position={activeRoute.baseLocation.position}
+            icon={baseIcon}
+            eventHandlers={{
+              click: () => clearActiveRoute()
+            }}
+          >
+            <Popup {...customPopupOptions}>
+              <div style={{textAlign: 'center', minWidth: '180px'}}>
+                <div style={{
+                  color: '#333',
+                  fontWeight: 'bold',
+                  marginBottom: '8px',
+                  fontSize: '15px'
+                }}>
+                  🏁 Base Location
+                </div>
+                
+                <div style={{
+                  color: '#333',
+                  fontWeight: '500',
+                  marginBottom: '12px',
+                  fontSize: '14px'
+                }}>
+                  {activeRoute.baseLocation.name}
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#333',
+                  borderRadius: '6px',
+                  padding: '8px',
+                  marginBottom: '8px'
+                }}>
+                  <div style={{
+                    color: '#FFC107',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                  }}>
+                    {activeRoute.baseLocation.position[0].toFixed(4)}, {activeRoute.baseLocation.position[1].toFixed(4)}
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'rgba(51, 51, 51, 0.1)',
+                  borderRadius: '6px',
+                  padding: '6px',
+                  border: '1px solid #333',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}>
+                  <span style={{color: '#333', fontSize: '14px'}}>🛣️</span>
+                  <span style={{
+                    color: '#333',
+                    fontSize: '13px',
+                    fontWeight: '500'
+                  }}>
+                    {activeRoute.name}
+                  </span>
+                </div>
+
+                <div style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: '#666',
+                  fontStyle: 'italic'
+                }}>
+                  Click to close route
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+      </MapContainer>
+    </>
   );
 };
 
-
-export default MyReservations;
+export default MapComponent;
