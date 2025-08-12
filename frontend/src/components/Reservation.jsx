@@ -10,7 +10,12 @@ import {
   Alert,
   CircularProgress,
   IconButton,
-  Divider
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   ChevronLeft as ChevronLeftIcon,
@@ -25,7 +30,7 @@ const allHours = [
 ];
 
 function formatDate(date) {
-  return date.toISOString().slice(0, 10);
+  return date.toLocaleDateString().slice(0, 10);
 }
 
 const Calendar = ({ selectedDate, onDateSelect, occupiedDates }) => {
@@ -181,6 +186,9 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
   const [occupiedHours, setOccupiedHours] = useState({});
   const [reservedHours, setReservedHours] = useState([]);
   const [loadingReservations, setLoadingReservations] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [reservationSummary, setReservationSummary] = useState(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   // Parse route duration to get the number of hours
   const durationHours = parseInt(route.duration, 10) || 1; // Fallback to 1 if duration is invalid
@@ -284,21 +292,28 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
     setReservedHours(occupiedHours[dateStr] || []);
   };
 
-  // ✅ NOVA FUNÇÃO: Verificar se uma hora de início é válida
   const isStartHourAvailable = (startHour) => {
     const startIndex = allHours.indexOf(startHour);
-    
-    // Verificar se há horas suficientes disponíveis consecutivas
-    for (let i = 0; i < durationHours; i++) {
+    const requiredHours = durationHours;
+
+    for (let i = 0; i < requiredHours; i++) {
       const hourIndex = startIndex + i;
-      const hour = allHours[hourIndex];
-      
-      // Se não existe a hora ou está reservada, não é válida
-      if (!hour || reservedHours.includes(hour)) {
+      const hour = hourIndex < allHours.length ? allHours[hourIndex] : `${17 + (hourIndex - allHours.length + 1)}:00`;
+      if (hourIndex < allHours.length && reservedHours.includes(hour)) {
         return false;
       }
     }
     return true;
+  };
+
+  const getEndHourDisplay = (startHour) => {
+    const startIndex = allHours.indexOf(startHour);
+    const endIndex = startIndex + durationHours;
+    if (endIndex >= allHours.length) {
+      const endHour = 17 + (endIndex - allHours.length + 1);
+      return `${endHour}:00`;
+    }
+    return allHours[endIndex];
   };
 
   // ✅ NOVA FUNÇÃO: Obter todas as horas que serão ocupadas
@@ -350,13 +365,18 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
 
       // ✅ Obter todas as horas que serão ocupadas
       const hoursToReserve = getOccupiedHours(selectedStartHour);
-      
       await addReservation(route, formatDate(selectedDate), hoursToReserve);
       
       // Success feedback
-      const endTime = allHours[allHours.indexOf(selectedStartHour) + durationHours - 1];
-      alert(`Reservation confirmed!\nRoute: ${route.name}\nDate: ${formatDate(selectedDate)}\nTime: ${selectedStartHour} - ${endTime}\nDuration: ${durationHours} hour(s)`);
-      
+      const endTime = getEndHourDisplay(selectedStartHour);
+      setReservationSummary({
+        routeName: route.name,
+        date: formatDate(selectedDate),
+        startTime: selectedStartHour,
+        endTime,
+        duration: durationHours
+      });
+      setSuccessDialogOpen(true);
       // Reset and close
       setSelectedDate(null);
       setSelectedStartHour('');
@@ -678,7 +698,7 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
           <Button
             fullWidth
             variant="contained"
-            onClick={handleReserve}
+            onClick={() => setConfirmDialogOpen(true)}
             disabled={!selectedDate || !selectedStartHour || loading}
             sx={{ 
               borderRadius: '12px', 
@@ -719,6 +739,64 @@ const Reservation = ({ onClose, route, onReservationComplete }) => {
             Close
           </Button>
         </Box>
+        <Dialog
+          open={confirmDialogOpen}
+          onClose={() => setConfirmDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+          PaperProps={{
+            sx: {
+              background: '#FFF8E1',
+              color: '#333',
+              borderRadius: 2,
+              border: '2px solid #FFC107',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+            }
+          }}
+        >
+          <DialogTitle>Confirm Your Reservation</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Please review your reservation details:
+              <br /><br />
+              <strong>Route:</strong> {route.name}<br />
+              <strong>Date:</strong> {selectedDate ? formatDate(selectedDate) : ''}<br />
+              <strong>Time:</strong> {selectedStartHour} - {getEndHourDisplay(selectedStartHour)}<br />
+              <strong>Duration:</strong> {durationHours} hour{durationHours > 1 ? 's' : ''}
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button 
+              onClick={() => setConfirmDialogOpen(false)}
+              color="error"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmDialogOpen(false);
+                handleReserve();
+              }}
+              variant="outlined"
+              sx={{
+                borderRadius: '12px',
+                textTransform: 'none',
+                bgcolor: '#FFC107',
+                color: '#333',
+                fontSize: '0.80rem',
+                padding: '6px 8px',
+                minWidth: '80px',
+                '&:hover': { bgcolor: '#FFB300' },
+                '&:focus': {
+                  borderColor: 'yellow',
+                  boxShadow: '0 0 0 2px rgba(255, 255, 0, 0.3)',
+                },
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
       </SidePanel>
     </Slide>
   );
