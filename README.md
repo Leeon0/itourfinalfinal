@@ -1,15 +1,15 @@
 # iTour
 
-##Descrição
+## Descrição
 A nossa aplicação permite a turistas entrar em contacto com guias turísticas da Região Autónoma da Madeira, que dispõem de diversas tours pela ilha. Os guias turísticos podem criar as suas rotas e publicitá-las através da aplicação.
 
-##Requirimentos
+## Requirimentos
 Para a aplicação funcionar na máquina local, e preciso seguir estes passos:
 - fazer "npm install" na diretoria root e na diretoria frontend/
 - fazer "npm start server.js" num terminal aberto na diretoria root
 - fazer "npm run dev" num outro terminal aberto na diretoria frontend/
 
-##Tecnologias Utilizadas
+## Tecnologias Utilizadas
 - Vite
 - Leaflet
 - Tailwind.css
@@ -17,13 +17,13 @@ Para a aplicação funcionar na máquina local, e preciso seguir estes passos:
 - Express.js
 - MySQL
 
-##Grupo
+## Grupo
 - António Duarte
 - Daniela Alves
 - Fábio Gonçalves
 - Leonardo Agrela
   
-##Overview do Repositório
+## Overview do Repositório
 
 ├── README.md
 ├── frontend
