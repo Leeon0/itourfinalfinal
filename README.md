@@ -25,7 +25,7 @@ Para a aplicação funcionar na máquina local, e preciso seguir estes passos:
   
 ## Overview do Repositório
 
-├── README.md
+├── README.md\n
 ├── frontend
 │   ├── FIREBASE_SETUP.md
 │   ├── README.md
