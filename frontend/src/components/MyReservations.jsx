@@ -43,15 +43,7 @@ const MyReservations = ({ onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null, reservationId: null, routeName: '' });
   
-  // Filter reservations to show only confirmed or cancelled
-  let filteredReservations = [];
-  
-  if (reservations) {
-    filteredReservations = reservations.results.filter(reservation => 
-      reservation.status === 'confirmed' || reservation.status === 'cancelled'
-    );
-  }
-  
+
   // Handle guide access restriction
   if (isGuide()) {
     return (
@@ -72,6 +64,16 @@ const MyReservations = ({ onClose }) => {
       </Slide>
     );
   }
+
+  // Filter reservations to show only confirmed or cancelled
+  let filteredReservations = [];
+  
+  if (reservations) {
+    filteredReservations = reservations.results.filter(reservation => 
+      reservation.status === 'confirmed' || reservation.status === 'cancelled'
+    );
+  }
+  
 
   const handleCancel = () => {
     setShowPanel(false);
