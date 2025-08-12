@@ -81,7 +81,7 @@ const RouteForm = ({ onClose }) => {
         longitude: loc.position[1],
         category: loc.category || null
       }));
-
+      
       const formData = new FormData();
       formData.append('name', routeName.trim());
       formData.append('description', routeDescription.trim());
@@ -92,7 +92,7 @@ const RouteForm = ({ onClose }) => {
       formData.append('createdBy', user.id);
 
       if (routeImage) { formData.append('routeImage', routeImage) };
-
+      console.log('o que vou mandar:', formData)
       await axios.post('http://localhost:8000/routes', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
