@@ -42,22 +42,23 @@ const GuidesList = ({ onClose, onReserve }) => {
     try {
       setLoading(true);
       const response = await axios.get('http://localhost:8000/guides');
+      console.log(response.data)
       let guides = response.data.results || [];
 
       // Filtrar solo guías que tengan al menos una ruta
-      guides = guides
+      /*guides = guides
         .map((guide) => ({
           ...guide,
           routesCount: guide.routesCount || 0
         }))
-        .filter((guide) => guide.routesCount > 0);
+        .filter((guide) => guide.routesCount > 0);*/
 
       // Ordenar por nombre o por rating
       const sortedGuides = guides.sort((a, b) => {
         if (sortType === 'name') {
           return a.name.localeCompare(b.name);
         } else if (sortType === 'rating') {
-          return (b.rating || 0) - (a.rating || 0);
+          return (b.averageRatings || 0) - (a.averageRatings || 0);
         }
         return 0;
       });
@@ -220,7 +221,7 @@ const GuidesList = ({ onClose, onReserve }) => {
 
                             <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
                               <Rating
-                                value={guide.averageRating || 0}
+                                value={guide.averageRatings || 0}
                                 precision={0.1}
                                 size="small"
                                 readOnly
