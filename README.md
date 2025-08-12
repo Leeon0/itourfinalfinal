@@ -25,9 +25,12 @@ Para a aplicação funcionar na máquina local, e preciso seguir estes passos:
   
 ## Overview do Repositório
 
-├── README.md\n
+├── README.md
+
 ├── frontend
+
 │   ├── FIREBASE_SETUP.md
+
 │   ├── README.md
 │   ├── index.html
 │   ├── package-lock.json
